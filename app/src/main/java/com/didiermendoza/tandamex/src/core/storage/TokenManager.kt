@@ -17,8 +17,4 @@ class TokenManager(context: Context) {
     fun getToken(): String? {
         return prefs.getString(KEY_TOKEN, null)
     }
-
-    fun clearToken() {
-        prefs.edit().remove(KEY_TOKEN).apply()
-    }
 }

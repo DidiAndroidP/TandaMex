@@ -7,7 +7,13 @@ data class LoginInput(
 
 data class LoginSuccess(
     val token: String,
-    val userId: Int,
-    val userName: String,
-    val email: String
+    val user: User
+)
+
+data class User(
+    val id: Int,
+    val name: String,
+    val email: String,
+    val active: Boolean,
+    val createdAt: String
 )

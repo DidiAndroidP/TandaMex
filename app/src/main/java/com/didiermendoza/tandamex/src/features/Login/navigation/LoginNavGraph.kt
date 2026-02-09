@@ -1,8 +1,5 @@
 package com.didiermendoza.tandamex.src.features.Login.navigation
 
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
@@ -25,17 +22,17 @@ class LoginNavGraph(
             val viewModel: LoginViewModel = viewModel(
                 factory = loginModule.provideLoginViewModelFactory()
             )
-            val state by viewModel.uiState.collectAsState()
 
-            LaunchedEffect(state.successData) {
-                if (state.successData != null) {
-                    navController.navigate(HomeRoute) {
-                        popUpTo(LoginRoute) { inclusive = true }
-                    }
-                    viewModel.resetState()
-                }
-            }
             LoginScreen(
+                viewModel = viewModel,
+                onNavigateToHome = {
+                    navController.navigate(HomeRoute) {
+                        popUpTo<LoginRoute> { inclusive = true }
+                    }
+                },
+                onNavigateToRegister = {
+                    navController.navigate(RegisterRoute)
+                }
             )
         }
     }

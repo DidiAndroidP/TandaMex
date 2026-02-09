@@ -15,5 +15,6 @@ data class UserDto(
     @SerializedName("id") val id: Int,
     @SerializedName("name") val name: String,
     @SerializedName("email") val email: String,
-    @SerializedName("active") val active: Boolean
+    @SerializedName("active") val active: Int,
+    @SerializedName("createdAt") val createdAt: String
 )

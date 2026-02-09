@@ -1,14 +1,22 @@
 package com.didiermendoza.tandamex.src.features.Home.di
 
 import com.didiermendoza.tandamex.src.core.di.AppContainer
-import com.didiermendoza.tandamex.src.features.Home.data.repositories.HomeRepositoryImpl
 import com.didiermendoza.tandamex.src.features.Home.domain.usecases.GetAvailableTandasUseCase
 import com.didiermendoza.tandamex.src.features.Home.presentation.viewmodels.HomeViewModelFactory
+import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.GetMyProfileUseCase
 
 class HomeModule(private val appContainer: AppContainer) {
+
     fun provideHomeViewModelFactory(): HomeViewModelFactory {
-        val repository = HomeRepositoryImpl(appContainer.tandaMexApi)
-        val useCase = GetAvailableTandasUseCase(repository)
-        return HomeViewModelFactory(useCase)
+        val homeRepository = appContainer.homeRepository
+        val profileRepository = appContainer.profileRepository
+
+        val getAvailableTandasUseCase = GetAvailableTandasUseCase(homeRepository)
+        val getMyProfileUseCase = GetMyProfileUseCase(profileRepository)
+
+        return HomeViewModelFactory(
+            getAvailableTandasUseCase,
+            getMyProfileUseCase
+        )
     }
 }

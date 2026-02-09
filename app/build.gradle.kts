@@ -16,7 +16,7 @@ if (localPropertiesFile.exists()) {
 
 android {
     namespace = "com.didiermendoza.tandamex"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.didiermendoza.tandamex"

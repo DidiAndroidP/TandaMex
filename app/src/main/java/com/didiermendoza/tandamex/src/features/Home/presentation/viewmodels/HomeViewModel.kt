@@ -4,69 +4,55 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.didiermendoza.tandamex.src.features.Home.domain.entities.Tanda
 import com.didiermendoza.tandamex.src.features.Home.domain.usecases.GetAvailableTandasUseCase
-import com.didiermendoza.tandamex.src.features.Home.presentation.components.TandaUiModel
+import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.GetMyProfileUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.text.NumberFormat
-import java.util.Locale
-
-data class HomeUiState(
-    val isLoading: Boolean = false,
-    val tandas: List<TandaUiModel> = emptyList(),
-    val error: String? = null,
-    val userName: String = "Usuario"
-)
 
 class HomeViewModel(
-    private val getAvailableTandasUseCase: GetAvailableTandasUseCase
+    private val getAvailableTandasUseCase: GetAvailableTandasUseCase,
+    private val getMyProfileUseCase: GetMyProfileUseCase
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(HomeUiState())
-    val uiState = _uiState.asStateFlow()
+    private val _tandas = MutableStateFlow<List<Tanda>>(emptyList())
+    val tandas = _tandas.asStateFlow()
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading = _isLoading.asStateFlow()
+
+    private val _error = MutableStateFlow<String?>(null)
+    val error = _error.asStateFlow()
+
+    private val _userName = MutableStateFlow("Usuario")
+    val userName = _userName.asStateFlow()
 
     init {
         loadData()
     }
 
     fun loadData() {
-        _uiState.update { it.copy(isLoading = true, error = null) }
+        _isLoading.value = true
+        _error.value = null
 
         viewModelScope.launch {
-            val result = getAvailableTandasUseCase()
+            getMyProfileUseCase().fold(
+                onSuccess = { user ->
+                    _userName.value = user.name.split(" ").firstOrNull() ?: user.name
+                },
+                onFailure = {
+                }
+            )
 
-            _uiState.update { currentState ->
-                result.fold(
-                    onSuccess = { entityList ->
-                        // AQUÍ TRANSFORMAMOS ENTIDAD -> UI MODEL
-                        val uiList = entityList.map { it.toUiModel() }
-
-                        currentState.copy(isLoading = false, tandas = uiList)
-                    },
-                    onFailure = { error ->
-                        currentState.copy(isLoading = false, error = error.message)
-                    }
-                )
-            }
+            getAvailableTandasUseCase().fold(
+                onSuccess = { list ->
+                    _tandas.value = list
+                    _isLoading.value = false
+                },
+                onFailure = { err ->
+                    _error.value = err.message
+                    _isLoading.value = false
+                }
+            )
         }
-    }
-
-    // Función auxiliar para mapear Entidad a Modelo de UI dentro del ViewModel
-    private fun Tanda.toUiModel(): TandaUiModel {
-        val formatter = NumberFormat.getCurrencyInstance(Locale.US)
-        return TandaUiModel(
-            id = this.id,
-            title = this.name,
-            amount = formatter.format(this.amount), // Formateamos dinero aquí
-            periodicity = when (this.frequency) {
-                "weekly" -> "Semanal"
-                "biweekly" -> "Quincenal"
-                "monthly" -> "Mensual"
-                else -> this.frequency
-            },
-            progress = this.progress,
-            membersCount = this.totalMembers
-        )
     }
 }

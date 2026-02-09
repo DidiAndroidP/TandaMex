@@ -1,7 +1,7 @@
 package com.didiermendoza.tandamex.src.features.Home.data.repositories
 
 import com.didiermendoza.tandamex.src.core.http.TandaMexApi
-import com.didiermendoza.tandamex.src.features.Home.data.datasources.remote.mapper.toDomain
+import com.didiermendoza.tandamex.src.features.Home.data.datasource.remote.mapper.toDomain
 import com.didiermendoza.tandamex.src.features.Home.domain.entities.Tanda
 import com.didiermendoza.tandamex.src.features.Home.domain.repositories.HomeRepository
 

@@ -7,42 +7,91 @@ import com.didiermendoza.tandamex.src.features.Register.domain.entities.User
 import com.didiermendoza.tandamex.src.features.Register.domain.usecases.RegisterUserUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
-data class RegisterUiState(
-    val isLoading: Boolean = false,
-    val error: String? = null,
-    val successUser: User? = null
-)
 
 class RegisterViewModel(
     private val registerUserUseCase: RegisterUserUseCase
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(RegisterUiState())
-    val uiState = _uiState.asStateFlow()
+    private val _name = MutableStateFlow("")
+    val name = _name.asStateFlow()
 
-    fun onRegisterClick(input: RegisterInput) {
-        _uiState.update { it.copy(isLoading = true, error = null) }
+    private val _email = MutableStateFlow("")
+    val email = _email.asStateFlow()
+
+    private val _phone = MutableStateFlow("")
+    val phone = _phone.asStateFlow()
+
+    private val _password = MutableStateFlow("")
+    val password = _password.asStateFlow()
+
+    private val _confirmPassword = MutableStateFlow("")
+    val confirmPassword = _confirmPassword.asStateFlow()
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading = _isLoading.asStateFlow()
+
+    private val _error = MutableStateFlow<String?>(null)
+    val error = _error.asStateFlow()
+
+    private val _successUser = MutableStateFlow<User?>(null)
+    val successUser = _successUser.asStateFlow()
+
+    fun onChangeName(newValue: String) {
+        _name.value = newValue
+    }
+
+    fun onChangeEmail(newValue: String) {
+        _email.value = newValue
+    }
+
+    fun onChangePhone(newValue: String) {
+        _phone.value = newValue
+    }
+
+    fun onChangePassword(newValue: String) {
+        _password.value = newValue
+    }
+
+    fun onChangeConfirmPassword(newValue: String) {
+        _confirmPassword.value = newValue
+    }
+
+    fun onRegisterClick() {
+        _isLoading.value = true
+        _error.value = null
+
+        val input = RegisterInput(
+            name = _name.value,
+            email = _email.value,
+            password = _password.value,
+            phone = _phone.value
+        )
 
         viewModelScope.launch {
             val result = registerUserUseCase(input)
 
-            _uiState.update { currentState ->
-                result.fold(
-                    onSuccess = { user ->
-                        currentState.copy(isLoading = false, successUser = user)
-                    },
-                    onFailure = { error ->
-                        currentState.copy(isLoading = false, error = error.message ?: "Error desconocido")
-                    }
-                )
-            }
+            result.fold(
+                onSuccess = { user ->
+                    _isLoading.value = false
+                    _successUser.value = user
+                },
+                onFailure = { exception ->
+                    _isLoading.value = false
+                    _error.value = exception.message ?: "Error desconocido"
+                }
+            )
         }
     }
 
     fun resetState() {
-        _uiState.update { RegisterUiState() }
+        _name.value = ""
+        _email.value = ""
+        _phone.value = ""
+        _password.value = ""
+        _confirmPassword.value = ""
+        _isLoading.value = false
+        _error.value = null
+        _successUser.value = null
     }
 }

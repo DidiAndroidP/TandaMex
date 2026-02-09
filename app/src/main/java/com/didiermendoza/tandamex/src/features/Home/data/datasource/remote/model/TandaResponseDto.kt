@@ -5,8 +5,8 @@ import com.google.gson.annotations.SerializedName
 data class TandaResponseDto(
     @SerializedName("id") val id: Int,
     @SerializedName("name") val name: String,
-    @SerializedName("contributionAmount") val amount: Double,
-    @SerializedName("paymentFrequency") val frequency: String,
+    @SerializedName("contributionAmount") val contributionAmount: Double,
+    @SerializedName("paymentFrequency") val paymentFrequency: String,
     @SerializedName("totalMembers") val totalMembers: Int,
     @SerializedName("status") val status: String
 )

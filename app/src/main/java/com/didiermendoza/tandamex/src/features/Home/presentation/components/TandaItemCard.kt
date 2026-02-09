@@ -9,28 +9,40 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-
-data class TandaUiModel(
-    val id: Int,
-    val title: String,
-    val amount: String,
-    val periodicity: String,
-    val progress: Float,
-    val membersCount: Int
-)
 
 @Composable
 fun TandaItemCard(
-    tanda: TandaUiModel,
+    title: String,
+    amount: String,
+    periodicity: String,
+    progress: Float,
+    membersCount: Int,
+    status: String = "created",
     onClick: () -> Unit
 ) {
+    val statusColor = when (status.lowercase()) {
+        "created" -> Color(0xFF4CAF50)
+        "active" -> MaterialTheme.colorScheme.primary
+        "finished" -> Color.Gray
+        else -> MaterialTheme.colorScheme.secondary
+    }
+
+    val statusText = when (status.lowercase()) {
+        "created" -> "Abierta"
+        "active" -> "En curso"
+        "finished" -> "Finalizada"
+        else -> status
+    }
+
     Card(
         onClick = onClick,
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface, // Fondo limpio
+            containerColor = MaterialTheme.colorScheme.surface,
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = Modifier
@@ -43,42 +55,51 @@ fun TandaItemCard(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Top
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = tanda.title,
+                        text = title,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
+
                     Text(
-                        text = tanda.periodicity,
+                        text = "• $statusText - $periodicity",
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.tertiary // Color terciario para detalles sutiles
+                        color = statusColor,
+                        fontWeight = FontWeight.SemiBold
                     )
                 }
 
-                // Icono decorativo o botón de ir
                 Icon(
                     imageVector = Icons.Default.ChevronRight,
-                    contentDescription = null,
+                    contentDescription = "Ver detalles",
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Información principal: Monto y Miembros
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = tanda.amount,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.primary // El dinero resalta con el color primario
-                )
+                Column {
+                    Text(
+                        text = "Contribución",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                    Text(
+                        text = amount,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
 
                 Spacer(modifier = Modifier.weight(1f))
 
@@ -98,8 +119,9 @@ fun TandaItemCard(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "${tanda.membersCount} miem.",
+                            text = "$membersCount",
                             style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSecondaryContainer
                         )
                     }
@@ -107,20 +129,18 @@ fun TandaItemCard(
             }
 
             Spacer(modifier = Modifier.height(12.dp))
-
-            // Barra de progreso
             Column {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "Progreso",
+                        text = "Ocupación",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.secondary
                     )
                     Text(
-                        text = "${(tanda.progress * 100).toInt()}%",
+                        text = "${(progress * 100).toInt()}%",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -128,13 +148,13 @@ fun TandaItemCard(
                 }
                 Spacer(modifier = Modifier.height(6.dp))
                 LinearProgressIndicator(
-                    progress = { tanda.progress },
+                    progress = { progress },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(6.dp),
-                    color = MaterialTheme.colorScheme.primary,
+                    color = statusColor,
                     trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                    strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
+                    strokeCap = androidx.compose.ui.graphics.StrokeCap.Round,
                 )
             }
         }

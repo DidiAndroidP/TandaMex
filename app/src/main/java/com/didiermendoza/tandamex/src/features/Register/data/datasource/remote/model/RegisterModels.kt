@@ -1,4 +1,5 @@
 package com.didiermendoza.tandamex.src.features.Register.data.datasources.remote.model
+
 import com.google.gson.annotations.SerializedName
 
 data class RegisterRequestDto(
@@ -14,6 +15,5 @@ data class RegisterResponseDto(
     @SerializedName("email") val email: String,
     @SerializedName("phone") val phone: String,
     @SerializedName("role") val role: String,
-    @SerializedName("active") val active: Boolean,
-    @SerializedName("createdAt") val createdAt: String
+    @SerializedName("active") val active: Boolean
 )

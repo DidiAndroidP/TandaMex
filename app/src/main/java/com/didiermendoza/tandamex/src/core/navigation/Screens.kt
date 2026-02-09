@@ -1,4 +1,5 @@
 package com.didiermendoza.tandamex.src.core.navigation
+
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -9,3 +10,6 @@ object RegisterRoute
 
 @Serializable
 object HomeRoute
+
+@Serializable
+object ProfileRoute

@@ -1,15 +1,42 @@
-package com.didiermendoza.tandamex.src.features.Home.data.datasources.remote.mapper
+package com.didiermendoza.tandamex.src.features.Tanda.data.datasources.remote.mapper
 
-import com.didiermendoza.tandamex.src.features.Home.data.datasources.remote.model.TandaResponseDto
-import com.didiermendoza.tandamex.src.features.Home.domain.entities.Tanda
+import com.didiermendoza.tandamex.src.features.Tanda.data.datasources.remote.model.TandaDetailDto
+import com.didiermendoza.tandamex.src.features.Tanda.data.datasources.remote.model.TandaMemberDto
+import com.didiermendoza.tandamex.src.features.Tanda.data.datasources.remote.model.TandaSummaryDto
+import com.didiermendoza.tandamex.src.features.Tanda.domain.entities.TandaDetail
+import com.didiermendoza.tandamex.src.features.Tanda.domain.entities.TandaMember
+import com.didiermendoza.tandamex.src.features.Tanda.domain.entities.TandaSummary
 
-fun TandaResponseDto.toDomain(): Tanda {
-    return Tanda(
+fun TandaDetailDto.toDomain(): TandaDetail {
+    return TandaDetail(
         id = this.id,
         name = this.name,
-        amount = this.amount,
-        frequency = this.frequency,
+        contributionAmount = this.contributionAmount,
         totalMembers = this.totalMembers,
-        progress = 0.1f
+        currentMembers = this.currentMembers,
+        status = this.status,
+        frequency = this.paymentFrequency ?: "Semanal",
+        isMember = this.isMember,
+        isAdmin = this.isAdmin,
+        creatorId = this.creatorId
+    )
+}
+
+fun TandaMemberDto.toDomain(): TandaMember {
+    return TandaMember(
+        id = this.id,
+        name = this.name,
+        photoUrl = this.photo,
+        hasPaid = this.alreadyPaid
+    )
+}
+
+fun TandaSummaryDto.toDomain(): TandaSummary {
+    return TandaSummary(
+        id = this.tandaId,
+        name = this.name,
+        totalCollected = this.totalCollected,
+        activeMembers = this.activeMembers,
+        status = this.status
     )
 }

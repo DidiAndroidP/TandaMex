@@ -5,11 +5,14 @@ import androidx.lifecycle.viewModelScope
 import com.didiermendoza.tandamex.src.features.Profile.domain.entities.User
 import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.GetMyProfileUseCase
 import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.UpdateProfileUseCase
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class ProfileViewModel(
+@HiltViewModel
+class ProfileViewModel @Inject constructor(
     private val getMyProfileUseCase: GetMyProfileUseCase,
     private val updateProfileUseCase: UpdateProfileUseCase
 ) : ViewModel() {

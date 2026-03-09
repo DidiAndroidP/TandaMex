@@ -3,8 +3,9 @@ package com.didiermendoza.tandamex.src.features.Register.domain.usecases
 import com.didiermendoza.tandamex.src.features.Register.domain.entities.RegisterInput
 import com.didiermendoza.tandamex.src.features.Register.domain.entities.User
 import com.didiermendoza.tandamex.src.features.Register.domain.repositories.RegisterRepository
+import javax.inject.Inject
 
-class RegisterUserUseCase(
+class RegisterUserUseCase @Inject constructor(
     private val repository: RegisterRepository
 ) {
     suspend operator fun invoke(input: RegisterInput): Result<User> {

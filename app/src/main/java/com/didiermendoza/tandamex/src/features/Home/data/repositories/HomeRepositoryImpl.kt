@@ -4,8 +4,9 @@ import com.didiermendoza.tandamex.src.core.http.TandaMexApi
 import com.didiermendoza.tandamex.src.features.Home.data.datasource.remote.mapper.toDomain
 import com.didiermendoza.tandamex.src.features.Home.domain.entities.Tanda
 import com.didiermendoza.tandamex.src.features.Home.domain.repositories.HomeRepository
+import javax.inject.Inject
 
-class HomeRepositoryImpl(
+class HomeRepositoryImpl @Inject constructor(
     private val api: TandaMexApi
 ) : HomeRepository {
 

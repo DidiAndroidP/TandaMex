@@ -7,8 +7,9 @@ import com.didiermendoza.tandamex.src.features.Login.data.datasources.remote.mod
 import com.didiermendoza.tandamex.src.features.Login.domain.entities.LoginInput
 import com.didiermendoza.tandamex.src.features.Login.domain.entities.LoginSuccess
 import com.didiermendoza.tandamex.src.features.Login.domain.repositories.LoginRepository
+import javax.inject.Inject
 
-class LoginRepositoryImpl(
+class LoginRepositoryImpl @Inject constructor(
     private val api: TandaMexApi,
     private val tokenManager: TokenManager
 ) : LoginRepository {

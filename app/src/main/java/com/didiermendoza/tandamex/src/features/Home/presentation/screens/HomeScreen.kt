@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.didiermendoza.tandamex.src.features.Home.presentation.components.TandaItemCard
 import com.didiermendoza.tandamex.src.features.Home.presentation.viewmodels.HomeViewModel
@@ -28,7 +29,7 @@ import java.util.Locale
 
 @Composable
 fun HomeScreen(
-    viewModel: HomeViewModel,
+    viewModel: HomeViewModel = hiltViewModel(),
     onNavigateToCreateTanda: () -> Unit,
     onNavigateToDetail: (Int) -> Unit,
     onNavigateToProfile: () -> Unit
@@ -59,7 +60,7 @@ fun HomeScreen(
                     shape = CircleShape,
                     elevation = FloatingActionButtonDefaults.elevation(8.dp)
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Crear Tanda")
+                    Icon(Icons.Default.Add, contentDescription = null)
                 }
             }
         }
@@ -166,7 +167,7 @@ fun HomeHeader(userName: String, onProfileClick: () -> Unit) {
             ) {
                 Icon(
                     imageVector = Icons.Default.AccountCircle,
-                    contentDescription = "Perfil",
+                    contentDescription = null,
                     modifier = Modifier.size(32.dp),
                     tint = MaterialTheme.colorScheme.primary
                 )

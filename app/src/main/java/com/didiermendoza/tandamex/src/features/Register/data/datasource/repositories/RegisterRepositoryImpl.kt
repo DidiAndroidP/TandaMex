@@ -6,8 +6,9 @@ import com.didiermendoza.tandamex.src.features.Register.data.datasources.remote.
 import com.didiermendoza.tandamex.src.features.Register.domain.entities.User
 import com.didiermendoza.tandamex.src.features.Register.domain.repositories.RegisterRepository
 import com.didiermendoza.tandamex.src.features.Register.domain.entities.RegisterInput
+import javax.inject.Inject
 
-class RegisterRepositoryImpl(
+class RegisterRepositoryImpl @Inject constructor(
     private val api: TandaMexApi
 ) : RegisterRepository {
 

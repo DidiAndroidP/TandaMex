@@ -6,11 +6,14 @@ import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.GetMyProf
 import com.didiermendoza.tandamex.src.features.Tanda.domain.entities.TandaDetail
 import com.didiermendoza.tandamex.src.features.Tanda.domain.entities.TandaMember
 import com.didiermendoza.tandamex.src.features.Tanda.domain.usecases.*
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class TandaViewModel(
+@HiltViewModel
+class TandaViewModel @Inject constructor(
     private val getTandaDetailUseCase: GetTandaDetailUseCase,
     private val joinTandaUseCase: JoinTandaUseCase,
     private val getTandaMembersUseCase: GetTandaMembersUseCase,
@@ -45,9 +48,12 @@ class TandaViewModel(
         _message.value = null
 
         viewModelScope.launch {
-            getMyProfileUseCase().onSuccess { user ->
-                _currentUserId.value = user.id
-            }
+            getMyProfileUseCase().fold(
+                onSuccess = { user ->
+                    _currentUserId.value = user.id
+                },
+                onFailure = {}
+            )
 
             getTandaDetailUseCase(tandaId).fold(
                 onSuccess = { detail ->

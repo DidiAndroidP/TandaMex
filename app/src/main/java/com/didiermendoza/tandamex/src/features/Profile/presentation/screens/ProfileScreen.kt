@@ -51,13 +51,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.didiermendoza.tandamex.src.features.Profile.presentation.components.ProfileOptionItem
 import com.didiermendoza.tandamex.src.features.Profile.presentation.viewmodels.ProfileViewModel
 
 @Composable
 fun ProfileScreen(
-    viewModel: ProfileViewModel,
+    viewModel: ProfileViewModel = hiltViewModel(),
     onBackClick: () -> Unit,
     onLogoutClick: () -> Unit
 ) {

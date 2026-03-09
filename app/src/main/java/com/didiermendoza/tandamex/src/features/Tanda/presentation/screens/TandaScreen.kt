@@ -10,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.didiermendoza.tandamex.src.features.Tanda.presentation.components.TandaActionButtons
 import com.didiermendoza.tandamex.src.features.Tanda.presentation.components.TandaDetailInfo
@@ -21,7 +22,7 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TandaScreen(
-    viewModel: TandaViewModel,
+    viewModel: TandaViewModel = hiltViewModel(),
     onBackClick: () -> Unit
 ) {
     val tanda by viewModel.tanda.collectAsStateWithLifecycle()

@@ -7,8 +7,9 @@ import com.didiermendoza.tandamex.src.features.Tanda.domain.entities.TandaDetail
 import com.didiermendoza.tandamex.src.features.Tanda.domain.entities.TandaMember
 import com.didiermendoza.tandamex.src.features.Tanda.domain.entities.TandaSummary
 import com.didiermendoza.tandamex.src.features.Tanda.domain.repositories.TandaRepository
+import javax.inject.Inject
 
-class TandaRepositoryImpl(
+class TandaRepositoryImpl @Inject constructor(
     private val api: TandaMexApi
 ) : TandaRepository {
 

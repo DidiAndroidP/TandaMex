@@ -12,13 +12,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.didiermendoza.tandamex.src.features.Tanda.presentation.viewmodels.CreateTandaViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateTandaScreen(
-    viewModel: CreateTandaViewModel,
+    viewModel: CreateTandaViewModel = hiltViewModel(),
     onBackClick: () -> Unit,
     onSuccess: () -> Unit
 ) {

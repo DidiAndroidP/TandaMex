@@ -5,11 +5,14 @@ import androidx.lifecycle.viewModelScope
 import com.didiermendoza.tandamex.src.features.Register.domain.entities.RegisterInput
 import com.didiermendoza.tandamex.src.features.Register.domain.entities.User
 import com.didiermendoza.tandamex.src.features.Register.domain.usecases.RegisterUserUseCase
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class RegisterViewModel(
+@HiltViewModel
+class RegisterViewModel @Inject constructor(
     private val registerUserUseCase: RegisterUserUseCase
 ) : ViewModel() {
 

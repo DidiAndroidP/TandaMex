@@ -5,8 +5,9 @@ import com.didiermendoza.tandamex.src.features.Profile.data.datasource.remote.ma
 import com.didiermendoza.tandamex.src.features.Profile.data.datasource.remote.model.UpdateProfileRequestDto
 import com.didiermendoza.tandamex.src.features.Profile.domain.entities.User
 import com.didiermendoza.tandamex.src.features.Profile.domain.repositories.ProfileRepository
+import javax.inject.Inject
 
-class ProfileRepositoryImpl(
+class ProfileRepositoryImpl @Inject constructor(
     private val api: TandaMexApi
 ) : ProfileRepository {
 

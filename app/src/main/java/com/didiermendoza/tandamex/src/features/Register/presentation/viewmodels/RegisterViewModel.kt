@@ -2,18 +2,20 @@ package com.didiermendoza.tandamex.src.features.Register.presentation.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.didiermendoza.tandamex.src.core.hardware.domain.VibrationManager
 import com.didiermendoza.tandamex.src.features.Register.domain.entities.RegisterInput
 import com.didiermendoza.tandamex.src.features.Register.domain.entities.User
 import com.didiermendoza.tandamex.src.features.Register.domain.usecases.RegisterUserUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @HiltViewModel
 class RegisterViewModel @Inject constructor(
-    private val registerUserUseCase: RegisterUserUseCase
+    private val registerUserUseCase: RegisterUserUseCase,
+    private val vibrationManager: VibrationManager
 ) : ViewModel() {
 
     private val _name = MutableStateFlow("")
@@ -78,10 +80,12 @@ class RegisterViewModel @Inject constructor(
                 onSuccess = { user ->
                     _isLoading.value = false
                     _successUser.value = user
+                    vibrationManager.vibrate(150)
                 },
                 onFailure = { exception ->
                     _isLoading.value = false
                     _error.value = exception.message ?: "Error desconocido"
+                    vibrationManager.vibrateError()
                 }
             )
         }

@@ -1,7 +1,7 @@
 package com.didiermendoza.tandamex.src.features.Login.data.repositories
 
-import com.didiermendoza.tandamex.src.core.http.TandaMexApi
 import com.didiermendoza.tandamex.src.core.storage.TokenManager
+import com.didiermendoza.tandamex.src.features.Login.data.datasource.remote.api.LoginApiService
 import com.didiermendoza.tandamex.src.features.Login.data.datasources.remote.mapper.toDomain
 import com.didiermendoza.tandamex.src.features.Login.data.datasources.remote.model.LoginRequestDto
 import com.didiermendoza.tandamex.src.features.Login.domain.entities.LoginInput
@@ -10,7 +10,7 @@ import com.didiermendoza.tandamex.src.features.Login.domain.repositories.LoginRe
 import javax.inject.Inject
 
 class LoginRepositoryImpl @Inject constructor(
-    private val api: TandaMexApi,
+    private val api: LoginApiService,
     private val tokenManager: TokenManager
 ) : LoginRepository {
 

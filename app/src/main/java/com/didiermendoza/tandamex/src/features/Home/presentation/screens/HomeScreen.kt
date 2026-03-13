@@ -16,12 +16,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.didiermendoza.tandamex.src.features.Home.presentation.components.TandaItemCard
 import com.didiermendoza.tandamex.src.features.Home.presentation.viewmodels.HomeViewModel
 import java.text.NumberFormat
@@ -38,6 +41,7 @@ fun HomeScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val userName by viewModel.userName.collectAsStateWithLifecycle()
+    val userPhoto by viewModel.userPhoto.collectAsStateWithLifecycle()
 
     val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.US)
 
@@ -72,6 +76,7 @@ fun HomeScreen(
         ) {
             HomeHeader(
                 userName = userName,
+                userPhoto = userPhoto,
                 onProfileClick = onNavigateToProfile
             )
 
@@ -124,7 +129,7 @@ fun HomeScreen(
 }
 
 @Composable
-fun HomeHeader(userName: String, onProfileClick: () -> Unit) {
+fun HomeHeader(userName: String, userPhoto: String?, onProfileClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -163,14 +168,25 @@ fun HomeHeader(userName: String, onProfileClick: () -> Unit) {
                 modifier = Modifier
                     .size(48.dp)
                     .background(MaterialTheme.colorScheme.surface, CircleShape)
-                    .padding(4.dp)
+                    .padding(if (userPhoto != null) 0.dp else 4.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.AccountCircle,
-                    contentDescription = null,
-                    modifier = Modifier.size(32.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
+                if (userPhoto != null) {
+                    AsyncImage(
+                        model = userPhoto,
+                        contentDescription = "Foto de perfil",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.AccountCircle,
+                        contentDescription = null,
+                        modifier = Modifier.size(32.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
         }
     }

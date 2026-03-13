@@ -1,26 +1,34 @@
 package com.didiermendoza.tandamex.src.features.Home.data.repositories
-
-import com.didiermendoza.tandamex.src.core.http.TandaMexApi
-import com.didiermendoza.tandamex.src.features.Home.data.datasource.remote.mapper.toDomain
+import com.didiermendoza.tandamex.src.core.database.dao.TandaDao
+import com.didiermendoza.tandamex.src.features.Home.data.datasource.remote.api.HomeApiService
 import com.didiermendoza.tandamex.src.features.Home.domain.entities.Tanda
 import com.didiermendoza.tandamex.src.features.Home.domain.repositories.HomeRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
+import com.didiermendoza.tandamex.src.features.Home.data.datasource.local.mapper.toDomain
+import com.didiermendoza.tandamex.src.features.Home.data.datasource.remote.mapper.toEntity
 
 class HomeRepositoryImpl @Inject constructor(
-    private val api: TandaMexApi
+    private val api: HomeApiService,
+    private val dao: TandaDao
 ) : HomeRepository {
 
-    override suspend fun getTandas(): Result<List<Tanda>> {
-        return try {
+    override fun getAvailableTandas(): Flow<List<Tanda>> {
+        return dao.getAllTandas().map { entities ->
+            entities.map { it.toDomain() }
+        }
+    }
+
+    override suspend fun syncTandas() {
+        try {
             val response = api.getAvailableTandas()
             if (response.isSuccessful && response.body() != null) {
-                val tandas = response.body()!!.map { it.toDomain() }
-                Result.success(tandas)
-            } else {
-                Result.failure(Exception("Error ${response.code()}: No se pudieron cargar las tandas"))
+                val remoteTandas = response.body()!!
+                dao.insertTandas(remoteTandas.map { it.toEntity() })
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            e.printStackTrace()
         }
     }
 }

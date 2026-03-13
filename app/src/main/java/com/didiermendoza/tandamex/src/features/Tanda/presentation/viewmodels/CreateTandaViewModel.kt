@@ -2,16 +2,18 @@ package com.didiermendoza.tandamex.src.features.Tanda.presentation.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.didiermendoza.tandamex.src.core.hardware.domain.VibrationManager
 import com.didiermendoza.tandamex.src.features.Tanda.domain.usecases.CreateTandaUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @HiltViewModel
 class CreateTandaViewModel @Inject constructor(
-    private val createTandaUseCase: CreateTandaUseCase
+    private val createTandaUseCase: CreateTandaUseCase,
+    private val vibrationManager: VibrationManager
 ) : ViewModel() {
 
     private val _name = MutableStateFlow("")
@@ -71,6 +73,7 @@ class CreateTandaViewModel @Inject constructor(
 
         if (_name.value.isBlank() || amountDouble == null || membersInt == null || delayDaysInt == null || penaltyDouble == null) {
             _error.value = "Por favor verifica los datos numéricos"
+            vibrationManager.vibrateError()
             return
         }
 
@@ -89,10 +92,12 @@ class CreateTandaViewModel @Inject constructor(
                 onSuccess = {
                     _isLoading.value = false
                     _success.value = true
+                    vibrationManager.vibrate(200)
                 },
                 onFailure = { err ->
                     _isLoading.value = false
                     _error.value = err.message
+                    vibrationManager.vibrateError()
                 }
             )
         }

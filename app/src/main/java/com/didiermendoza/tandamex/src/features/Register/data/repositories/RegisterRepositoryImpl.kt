@@ -1,6 +1,6 @@
 package com.didiermendoza.tandamex.src.features.Register.data.repositories
 
-import com.didiermendoza.tandamex.src.core.http.TandaMexApi
+import com.didiermendoza.tandamex.src.features.Register.data.datasource.remote.api.RegisterApiService
 import com.didiermendoza.tandamex.src.features.Register.data.datasources.remote.mapper.toDomain
 import com.didiermendoza.tandamex.src.features.Register.data.datasources.remote.model.RegisterRequestDto
 import com.didiermendoza.tandamex.src.features.Register.domain.entities.User
@@ -9,7 +9,7 @@ import com.didiermendoza.tandamex.src.features.Register.domain.entities.Register
 import javax.inject.Inject
 
 class RegisterRepositoryImpl @Inject constructor(
-    private val api: TandaMexApi
+    private val api: RegisterApiService
 ) : RegisterRepository {
 
     override suspend fun registerUser(input: RegisterInput): Result<User> {

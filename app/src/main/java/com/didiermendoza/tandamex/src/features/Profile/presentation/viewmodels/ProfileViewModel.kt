@@ -1,10 +1,14 @@
 package com.didiermendoza.tandamex.src.features.Profile.presentation.viewmodels
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.didiermendoza.tandamex.src.core.hardware.domain.VibrationManager
 import com.didiermendoza.tandamex.src.features.Profile.domain.entities.User
 import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.GetMyProfileUseCase
 import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.UpdateProfileUseCase
+import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.TakeProfilePhotoUseCase
+import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.UploadProfilePhotoUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,7 +18,10 @@ import javax.inject.Inject
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val getMyProfileUseCase: GetMyProfileUseCase,
-    private val updateProfileUseCase: UpdateProfileUseCase
+    private val updateProfileUseCase: UpdateProfileUseCase,
+    private val takeProfilePhotoUseCase: TakeProfilePhotoUseCase,
+    private val uploadProfilePhotoUseCase: UploadProfilePhotoUseCase,
+    private val vibrationManager: VibrationManager
 ) : ViewModel() {
 
     private val _user = MutableStateFlow<User?>(null)
@@ -31,6 +38,9 @@ class ProfileViewModel @Inject constructor(
 
     private val _successMessage = MutableStateFlow<String?>(null)
     val successMessage = _successMessage.asStateFlow()
+
+    private val _profilePhotoUri = MutableStateFlow<Uri?>(null)
+    val profilePhotoUri = _profilePhotoUri.asStateFlow()
 
     init {
         loadUserProfile()
@@ -62,6 +72,7 @@ class ProfileViewModel @Inject constructor(
     fun saveProfile(name: String, phone: String) {
         if (name.isBlank()) {
             _error.value = "El nombre no puede estar vacío"
+            vibrationManager.vibrateError()
             return
         }
 
@@ -73,13 +84,55 @@ class ProfileViewModel @Inject constructor(
                 onSuccess = { msg ->
                     _successMessage.value = msg
                     _isEditing.value = false
+                    vibrationManager.vibrate(200)
                     loadUserProfile()
                 },
                 onFailure = { err ->
                     _error.value = err.message
                     _isLoading.value = false
+                    vibrationManager.vibrateError()
                 }
             )
         }
+    }
+
+    fun takePhoto(imageCapture: Any) {
+        _isLoading.value = true
+        _error.value = null
+
+        viewModelScope.launch {
+            takeProfilePhotoUseCase(imageCapture).fold(
+                onSuccess = { uri ->
+                    _profilePhotoUri.value = uri
+                    vibrationManager.vibrate(100)
+                    uri.path?.let { path ->
+                        uploadPhotoToServer(path)
+                    } ?: run {
+                        _isLoading.value = false
+                    }
+                },
+                onFailure = { exception ->
+                    _error.value = exception.message
+                    _isLoading.value = false
+                    vibrationManager.vibrateError()
+                }
+            )
+        }
+    }
+
+    private suspend fun uploadPhotoToServer(filePath: String) {
+        uploadProfilePhotoUseCase(filePath).fold(
+            onSuccess = { msg ->
+                _isLoading.value = false
+                _successMessage.value = "Foto actualizada correctamente"
+                vibrationManager.vibrate(200)
+                loadUserProfile()
+            },
+            onFailure = { err ->
+                _isLoading.value = false
+                _error.value = "Error al subir la foto: ${err.message}"
+                vibrationManager.vibrateError()
+            }
+        )
     }
 }

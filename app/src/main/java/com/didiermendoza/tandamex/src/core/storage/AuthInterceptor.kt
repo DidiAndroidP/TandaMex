@@ -1,6 +1,5 @@
-package com.didiermendoza.tandamex.src.core.http
+package com.didiermendoza.tandamex.src.core.storage
 
-import com.didiermendoza.tandamex.src.core.storage.TokenManager
 import okhttp3.Interceptor
 import okhttp3.Response
 import javax.inject.Inject

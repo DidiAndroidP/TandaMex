@@ -15,6 +15,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.didiermendoza.tandamex.src.features.Tanda.presentation.components.TandaActionButtons
 import com.didiermendoza.tandamex.src.features.Tanda.presentation.components.TandaDetailInfo
 import com.didiermendoza.tandamex.src.features.Tanda.presentation.components.TandaMembersList
+import com.didiermendoza.tandamex.src.features.Tanda.presentation.components.TandaScheduleSection
 import com.didiermendoza.tandamex.src.features.Tanda.presentation.viewmodels.TandaViewModel
 import java.text.NumberFormat
 import java.util.Locale
@@ -27,6 +28,8 @@ fun TandaScreen(
 ) {
     val tanda by viewModel.tanda.collectAsStateWithLifecycle()
     val members by viewModel.members.collectAsStateWithLifecycle()
+    val scheduleData by viewModel.scheduleData.collectAsStateWithLifecycle()
+    val currentUserId by viewModel.currentUserId.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
     val deleteSuccess by viewModel.deleteSuccess.collectAsStateWithLifecycle()
@@ -114,6 +117,15 @@ fun TandaScreen(
                     )
 
                     HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
+
+                    if (scheduleData != null) {
+                        TandaScheduleSection(
+                            scheduleData = scheduleData!!,
+                            members = members,
+                            currentUserId = currentUserId
+                        )
+                        HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
+                    }
 
                     TandaMembersList(
                         members = members,

@@ -8,14 +8,13 @@ fun UserDto.toDomain(): User {
     val safeEmail = this.email ?: ""
     val safePhone = this.phone ?: ""
 
-    val isActive = this.active.toString() == "1" || this.active.toString() == "true"
-
     return User(
         id = this.id,
         name = safeName,
         email = safeEmail,
         phone = safePhone,
-        active = isActive,
+        active = this.active,
+        photo = this.photo,
         initials = if (safeName.isNotEmpty()) safeName.take(2).uppercase() else "??"
     )
 }

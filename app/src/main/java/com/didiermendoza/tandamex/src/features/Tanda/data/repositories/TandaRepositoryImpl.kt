@@ -1,16 +1,30 @@
 package com.didiermendoza.tandamex.src.features.Tanda.data.repositories
 
-import com.didiermendoza.tandamex.src.core.http.TandaMexApi
-import com.didiermendoza.tandamex.src.features.Tanda.data.datasources.remote.mapper.toDomain
+import com.didiermendoza.tandamex.src.core.database.dao.ScheduleDao
+import com.didiermendoza.tandamex.src.core.database.dao.TandaDetailDao
+import com.didiermendoza.tandamex.src.core.database.dao.TandaMemberDao
+import com.didiermendoza.tandamex.src.features.Tanda.data.datasource.remote.api.TandaApiService
 import com.didiermendoza.tandamex.src.features.Tanda.data.datasources.remote.model.CreateTandaRequestDto
 import com.didiermendoza.tandamex.src.features.Tanda.domain.entities.TandaDetail
 import com.didiermendoza.tandamex.src.features.Tanda.domain.entities.TandaMember
 import com.didiermendoza.tandamex.src.features.Tanda.domain.entities.TandaSummary
 import com.didiermendoza.tandamex.src.features.Tanda.domain.repositories.TandaRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
+import com.didiermendoza.tandamex.src.features.Tanda.data.datasources.local.mapper.toDomain
+import com.didiermendoza.tandamex.src.features.Tanda.data.datasources.local.mapper.toEntity
+import com.didiermendoza.tandamex.src.features.Tanda.data.datasources.local.mapper.toSummaryEntity
+import com.didiermendoza.tandamex.src.features.Tanda.data.datasources.remote.mapper.toEntity
+import com.didiermendoza.tandamex.src.features.Tanda.data.datasources.remote.mapper.toDomain
+import com.didiermendoza.tandamex.src.features.Tanda.domain.entities.ScheduleData
 
 class TandaRepositoryImpl @Inject constructor(
-    private val api: TandaMexApi
+    private val api: TandaApiService,
+    private val detailDao: TandaDetailDao,
+    private val memberDao: TandaMemberDao,
+    private val scheduleDao: ScheduleDao
 ) : TandaRepository {
 
     override suspend fun createTanda(
@@ -29,30 +43,47 @@ class TandaRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getTandaDetail(tandaId: Int): Result<TandaDetail> {
-        return try {
-            val response = api.getTandaDetail(tandaId)
-            if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!.toDomain())
-            } else {
-                Result.failure(Exception("Error al obtener detalle: ${response.code()}"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
+    override fun getTandaDetail(tandaId: Int): Flow<TandaDetail?> {
+        return detailDao.getTandaDetail(tandaId).map { it?.toDomain() }
+    }
+
+    override fun getTandaMembers(tandaId: Int): Flow<List<TandaMember>> {
+        return memberDao.getTandaMembers(tandaId).map { entities ->
+            entities.map { it.toDomain() }
         }
     }
 
-    override suspend fun getTandaMembers(tandaId: Int): Result<List<TandaMember>> {
-        return try {
-            val response = api.getTandaMembers(tandaId)
-            if (response.isSuccessful && response.body() != null) {
-                val members = response.body()!!.map { it.toDomain() }
-                Result.success(members)
+    override fun getSchedule(tandaId: Int): Flow<ScheduleData?> {
+        return combine(
+            scheduleDao.getScheduleSummary(tandaId),
+            scheduleDao.getTurnos(tandaId)
+        ) { summary, turnos ->
+            if (summary == null) {
+                null
             } else {
-                Result.failure(Exception("Error al obtener miembros: ${response.code()}"))
+                ScheduleData(
+                    tandaId = summary.tandaId,
+                    turnos = turnos.map { it.toDomain() },
+                    fechaFin = summary.fechaFin,
+                    montoTotal = summary.montoTotal
+                )
+            }
+        }
+    }
+
+    override suspend fun syncTandaDetailAndMembers(tandaId: Int) {
+        try {
+            val detailResponse = api.getTandaDetail(tandaId)
+            if (detailResponse.isSuccessful && detailResponse.body() != null) {
+                detailDao.insertTandaDetail(detailResponse.body()!!.toEntity())
+            }
+
+            val membersResponse = api.getTandaMembers(tandaId)
+            if (membersResponse.isSuccessful && membersResponse.body() != null) {
+                memberDao.insertTandaMembers(membersResponse.body()!!.map { it.toEntity(tandaId) })
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            e.printStackTrace()
         }
     }
 
@@ -112,6 +143,10 @@ class TandaRepositoryImpl @Inject constructor(
         return try {
             val response = api.deleteTanda(tandaId)
             if (response.isSuccessful && response.body() != null) {
+                detailDao.deleteTandaDetail(tandaId)
+                memberDao.deleteMembersByTanda(tandaId)
+                scheduleDao.deleteScheduleSummary(tandaId)
+                scheduleDao.deleteTurnos(tandaId)
                 Result.success(response.body()!!.message)
             } else {
                 val errorMessage = when (response.code()) {
@@ -127,11 +162,19 @@ class TandaRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun generateSchedule(tandaId: Int): Result<String> {
+    override suspend fun generateSchedule(tandaId: Int): Result<ScheduleData> {
         return try {
             val response = api.generateSchedule(tandaId)
             if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!.message)
+                val scheduleDomain = response.body()!!.data.toDomain()
+
+                scheduleDao.clearAndInsertSchedule(
+                    tandaId = tandaId,
+                    summary = scheduleDomain.toSummaryEntity(),
+                    turnos = scheduleDomain.turnos.map { it.toEntity(tandaId) }
+                )
+
+                Result.success(scheduleDomain)
             } else {
                 Result.failure(Exception("Error al generar horario: ${response.code()}"))
             }

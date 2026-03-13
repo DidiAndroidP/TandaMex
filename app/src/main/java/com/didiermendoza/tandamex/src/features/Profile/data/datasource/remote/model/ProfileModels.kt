@@ -7,10 +7,10 @@ data class UserDto(
     @SerializedName("name") val name: String?,
     @SerializedName("email") val email: String?,
     @SerializedName("phone") val phone: String?,
-    @SerializedName("active") val active: Any?,
+    @SerializedName("photo") val photo: String?,
+    @SerializedName("active") val active: Boolean,
     @SerializedName("createdAt") val createdAt: String?
 )
-
 data class UpdateProfileRequestDto(
     @SerializedName("name") val name: String,
     @SerializedName("phone") val phone: String

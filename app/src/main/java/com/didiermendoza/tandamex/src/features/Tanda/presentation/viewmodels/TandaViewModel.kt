@@ -2,27 +2,35 @@ package com.didiermendoza.tandamex.src.features.Tanda.presentation.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.didiermendoza.tandamex.src.core.hardware.domain.VibrationManager
 import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.GetMyProfileUseCase
+import com.didiermendoza.tandamex.src.features.Tanda.domain.entities.ScheduleData
 import com.didiermendoza.tandamex.src.features.Tanda.domain.entities.TandaDetail
 import com.didiermendoza.tandamex.src.features.Tanda.domain.entities.TandaMember
 import com.didiermendoza.tandamex.src.features.Tanda.domain.usecases.*
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @HiltViewModel
 class TandaViewModel @Inject constructor(
     private val getTandaDetailUseCase: GetTandaDetailUseCase,
-    private val joinTandaUseCase: JoinTandaUseCase,
     private val getTandaMembersUseCase: GetTandaMembersUseCase,
+    private val getScheduleUseCase: GetScheduleUseCase,
+    private val syncTandaDetailUseCase: SyncTandaDetailUseCase,
+    private val joinTandaUseCase: JoinTandaUseCase,
     private val leaveTandaUseCase: LeaveTandaUseCase,
     private val startTandaUseCase: StartTandaUseCase,
     private val finishTandaUseCase: FinishTandaUseCase,
     private val deleteTandaUseCase: DeleteTandaUseCase,
     private val generateScheduleUseCase: GenerateScheduleUseCase,
-    private val getMyProfileUseCase: GetMyProfileUseCase
+    private val getMyProfileUseCase: GetMyProfileUseCase,
+    private val vibrationManager: VibrationManager
 ) : ViewModel() {
 
     private val _isLoading = MutableStateFlow(false)
@@ -34,6 +42,9 @@ class TandaViewModel @Inject constructor(
     private val _members = MutableStateFlow<List<TandaMember>>(emptyList())
     val members = _members.asStateFlow()
 
+    private val _scheduleData = MutableStateFlow<ScheduleData?>(null)
+    val scheduleData = _scheduleData.asStateFlow()
+
     private val _currentUserId = MutableStateFlow<Int?>(null)
     val currentUserId = _currentUserId.asStateFlow()
 
@@ -43,35 +54,51 @@ class TandaViewModel @Inject constructor(
     private val _deleteSuccess = MutableStateFlow(false)
     val deleteSuccess = _deleteSuccess.asStateFlow()
 
+    private var observeJob: Job? = null
+
     fun loadTandaDetail(tandaId: Int) {
         _isLoading.value = true
         _message.value = null
 
         viewModelScope.launch {
             getMyProfileUseCase().fold(
-                onSuccess = { user ->
-                    _currentUserId.value = user.id
-                },
+                onSuccess = { user -> _currentUserId.value = user.id },
                 onFailure = {}
             )
+        }
 
-            getTandaDetailUseCase(tandaId).fold(
-                onSuccess = { detail ->
-                    _tanda.value = detail
-                },
-                onFailure = { err ->
-                    _message.value = err.message
+        observeData(tandaId)
+        syncData(tandaId)
+    }
+
+    private fun observeData(tandaId: Int) {
+        observeJob?.cancel()
+        observeJob = viewModelScope.launch {
+            getTandaDetailUseCase(tandaId).onEach { detail ->
+                _tanda.value = detail
+                if (detail != null) {
+                    _isLoading.value = false
                 }
-            )
+            }.launchIn(this)
 
-            getTandaMembersUseCase(tandaId).fold(
-                onSuccess = { list ->
-                    _members.value = list
-                },
-                onFailure = {}
-            )
+            getTandaMembersUseCase(tandaId).onEach { list ->
+                _members.value = list
+            }.launchIn(this)
 
-            _isLoading.value = false
+            getScheduleUseCase(tandaId).onEach { data ->
+                _scheduleData.value = data
+            }.launchIn(this)
+        }
+    }
+
+    private fun syncData(tandaId: Int) {
+        viewModelScope.launch {
+            try {
+                syncTandaDetailUseCase(tandaId)
+            } catch (e: Exception) {
+            } finally {
+                _isLoading.value = false
+            }
         }
     }
 
@@ -84,21 +111,29 @@ class TandaViewModel @Inject constructor(
     }
 
     fun startTanda() {
-        val tandaId = _tanda.value!!.id
+        val tandaId = _tanda.value?.id ?: return
         _isLoading.value = true
-        viewModelScope.launch {
-            generateScheduleUseCase(tandaId)
 
-            startTandaUseCase(tandaId).fold(
-                onSuccess = { msg ->
-                    _message.value = msg
-                    loadTandaDetail(tandaId)
-                },
-                onFailure = { err ->
+        viewModelScope.launch {
+            val scheduleResult = generateScheduleUseCase(tandaId)
+
+            if (scheduleResult.isSuccess) {
+                val startResult = startTandaUseCase(tandaId)
+
+                if (startResult.isSuccess) {
+                    _message.value = startResult.getOrNull()
+                    vibrationManager.vibrate(200)
+                    syncData(tandaId)
+                } else {
                     _isLoading.value = false
-                    _message.value = err.message
+                    _message.value = startResult.exceptionOrNull()?.message
+                    vibrationManager.vibrateError()
                 }
-            )
+            } else {
+                _isLoading.value = false
+                _message.value = scheduleResult.exceptionOrNull()?.message
+                vibrationManager.vibrateError()
+            }
         }
     }
 
@@ -115,10 +150,12 @@ class TandaViewModel @Inject constructor(
                 onSuccess = {
                     _isLoading.value = false
                     _deleteSuccess.value = true
+                    vibrationManager.vibrate(150)
                 },
                 onFailure = { err ->
                     _isLoading.value = false
                     _message.value = err.message
+                    vibrationManager.vibrateError()
                 }
             )
         }
@@ -132,11 +169,13 @@ class TandaViewModel @Inject constructor(
             action().fold(
                 onSuccess = { msg ->
                     _message.value = msg
-                    loadTandaDetail(currentId)
+                    vibrationManager.vibrate(150)
+                    syncData(currentId)
                 },
                 onFailure = { err ->
                     _isLoading.value = false
                     _message.value = err.message
+                    vibrationManager.vibrateError()
                 }
             )
         }

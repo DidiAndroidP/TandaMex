@@ -17,7 +17,7 @@ fun UserDto.toDomain(): User {
         id = this.id,
         name = this.name,
         email = this.email,
-        active = this.active == 1,
+        active = this.active,
         createdAt = this.createdAt
     )
 }

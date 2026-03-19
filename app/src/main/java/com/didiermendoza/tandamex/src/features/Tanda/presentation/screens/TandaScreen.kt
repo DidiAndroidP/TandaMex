@@ -119,12 +119,21 @@ fun TandaScreen(
                     HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
 
                     if (scheduleData != null) {
-                        TandaScheduleSection(
-                            scheduleData = scheduleData!!,
-                            members = members,
-                            currentUserId = currentUserId
-                        )
-                        HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
+                        if (members.isNotEmpty()) {
+                            TandaScheduleSection(
+                                scheduleData = scheduleData!!,
+                                members = members,
+                                currentUserId = currentUserId
+                            )
+                            HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
+                        } else {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator()
+                            }
+                        }
                     }
 
                     TandaMembersList(

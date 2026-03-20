@@ -22,11 +22,14 @@ fun TandaActionButtons(
     tanda: TandaDetail,
     realCount: Int,
     isLoading: Boolean,
+    allPaid: Boolean,
+    hasCurrentUserPaid: Boolean,
     onJoin: () -> Unit,
     onLeave: () -> Unit,
     onStart: () -> Unit,
     onFinish: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onPay: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
         if (tanda.isAdmin) {
@@ -34,17 +37,22 @@ fun TandaActionButtons(
                 tanda = tanda,
                 realCount = realCount,
                 isLoading = isLoading,
+                allPaid = allPaid,
+                hasCurrentUserPaid = hasCurrentUserPaid,
                 onStart = onStart,
                 onFinish = onFinish,
-                onDelete = onDelete
+                onDelete = onDelete,
+                onPay = onPay
             )
         } else {
             UserControls(
                 tanda = tanda,
                 realCount = realCount,
                 isLoading = isLoading,
+                hasCurrentUserPaid = hasCurrentUserPaid,
                 onJoin = onJoin,
-                onLeave = onLeave
+                onLeave = onLeave,
+                onPay = onPay
             )
         }
     }
@@ -55,9 +63,12 @@ fun AdminControls(
     tanda: TandaDetail,
     realCount: Int,
     isLoading: Boolean,
+    allPaid: Boolean,
+    hasCurrentUserPaid: Boolean,
     onStart: () -> Unit,
     onFinish: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onPay: () -> Unit
 ) {
     val isInProgress = tanda.status == "IN_PROGRESS"
     val isCreated = tanda.status == "CREATED"
@@ -69,10 +80,10 @@ fun AdminControls(
         AlertDialog(
             onDismissRequest = { showIncompleteDialog = false },
             icon = { Icon(Icons.Default.Group, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-            title = { Text(text = "Faltan Participantes") },
+            title = { Text(text = "Faltan Participantes o Pagos") },
             text = {
                 Text(
-                    "No puedes iniciar la tanda aún. Se necesitan ${tanda.totalMembers} miembros y tienes $realCount.",
+                    "No puedes iniciar la tanda aún. Se necesitan ${tanda.totalMembers} miembros y que TODOS hayan pagado su aportación inicial.",
                     textAlign = TextAlign.Center
                 )
             },
@@ -108,12 +119,31 @@ fun AdminControls(
     }
 
     if (isCreated || isInProgress) {
+
+        // 👇 BOTÓN PARA QUE EL ADMIN PAGUE SU PARTE 👇
+        if (isCreated && !hasCurrentUserPaid) {
+            Button(
+                onClick = onPay,
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                enabled = !isLoading,
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+                } else {
+                    Text("Pagar mi aportación", style = MaterialTheme.typography.titleMedium)
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+
         Button(
             onClick = {
                 if (isInProgress) {
                     onFinish()
                 } else {
-                    if (realCount < tanda.totalMembers) {
+                    if (realCount < tanda.totalMembers || !allPaid) {
                         showIncompleteDialog = true
                     } else {
                         onStart()
@@ -132,7 +162,7 @@ fun AdminControls(
                 CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
             } else {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (!isInProgress && realCount < tanda.totalMembers) {
+                    if (!isInProgress && (realCount < tanda.totalMembers || !allPaid)) {
                         Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(20.dp))
                         Spacer(modifier = Modifier.width(8.dp))
                     }
@@ -171,8 +201,10 @@ fun UserControls(
     tanda: TandaDetail,
     realCount: Int,
     isLoading: Boolean,
+    hasCurrentUserPaid: Boolean,
     onJoin: () -> Unit,
-    onLeave: () -> Unit
+    onLeave: () -> Unit,
+    onPay: () -> Unit
 ) {
     if (!tanda.isMember && tanda.status == "CREATED") {
         val isFull = realCount >= tanda.totalMembers
@@ -186,16 +218,32 @@ fun UserControls(
             else Text(if (isFull) "Cupo Lleno" else "Unirme a esta Tanda", style = MaterialTheme.typography.titleMedium)
         }
     } else if (tanda.isMember && tanda.status == "CREATED") {
-        OutlinedButton(
-            onClick = onLeave,
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
-            enabled = !isLoading,
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            if (isLoading) CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.error)
-            else Text("Salir de la Tanda", style = MaterialTheme.typography.titleMedium)
+        Column {
+            if (!hasCurrentUserPaid) {
+                Button(
+                    onClick = onPay,
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    enabled = !isLoading,
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    if (isLoading) CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+                    else Text("Pagar mi aportación", style = MaterialTheme.typography.titleMedium)
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            OutlinedButton(
+                onClick = onLeave,
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+                enabled = !isLoading,
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                if (isLoading) CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.error)
+                else Text(if (hasCurrentUserPaid) "Salir y Reembolsar" else "Salir de la Tanda", style = MaterialTheme.typography.titleMedium)
+            }
         }
     }
 }

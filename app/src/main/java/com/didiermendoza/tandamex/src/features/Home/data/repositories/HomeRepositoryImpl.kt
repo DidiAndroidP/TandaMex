@@ -30,7 +30,7 @@ class HomeRepositoryImpl @Inject constructor(
             val response = api.getAvailableTandas()
             if (response.isSuccessful && response.body() != null) {
                 val remoteTandas = response.body()!!
-                tandaDao.insertTandas(remoteTandas.map { it.toEntity() })
+                tandaDao.replaceAllTandas(remoteTandas.map { it.toEntity() })
             }
         } catch (e: Exception) {
             e.printStackTrace()

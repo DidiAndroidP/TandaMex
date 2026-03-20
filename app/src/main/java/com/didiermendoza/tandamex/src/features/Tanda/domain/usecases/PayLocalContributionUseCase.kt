@@ -3,10 +3,10 @@ package com.didiermendoza.tandamex.src.features.Tanda.domain.usecases
 import com.didiermendoza.tandamex.src.features.Tanda.domain.repositories.TandaRepository
 import javax.inject.Inject
 
-class LeaveTandaUseCase @Inject constructor(
+class PayLocalContributionUseCase @Inject constructor(
     private val repository: TandaRepository
 ) {
-    suspend operator fun invoke(tandaId: Int, userId: Int, amountToRefund: Double): Result<String> {
-        return repository.leaveTanda(tandaId, userId, amountToRefund)
+    suspend operator fun invoke(tandaId: Int, userId: Int, amount: Double): Result<String> {
+        return repository.payLocalContribution(tandaId, userId, amount)
     }
 }

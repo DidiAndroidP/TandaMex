@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import com.didiermendoza.tandamex.src.core.database.entities.TandaEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -17,4 +18,13 @@ interface TandaDao {
 
     @Query("DELETE FROM tandas")
     suspend fun clearTandas()
+
+    @Query("DELETE FROM tandas WHERE id = :tandaId")
+    suspend fun deleteTanda(tandaId: Int)
+
+    @Transaction
+    suspend fun replaceAllTandas(tandas: List<TandaEntity>) {
+        clearTandas()
+        insertTandas(tandas)
+    }
 }

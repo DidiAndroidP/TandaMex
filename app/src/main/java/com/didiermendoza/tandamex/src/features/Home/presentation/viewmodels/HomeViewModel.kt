@@ -47,6 +47,9 @@ class HomeViewModel @Inject constructor(
     private val _showWalletDialog = MutableStateFlow(false)
     val showWalletDialog = _showWalletDialog.asStateFlow()
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing = _isRefreshing.asStateFlow()
+
     init {
         observeTandas()
         loadData()
@@ -114,5 +117,20 @@ class HomeViewModel @Inject constructor(
     fun declineWalletCreation() {
         _showWalletDialog.value = false
         _hasWallet.value = false
+    }
+
+    fun refreshData() {
+        _isRefreshing.value = true
+        _error.value = null
+
+        viewModelScope.launch {
+            try {
+                syncTandasUseCase()
+            } catch (e: Exception) {
+                _error.value = "Error al recargar."
+            } finally {
+                _isRefreshing.value = false
+            }
+        }
     }
 }

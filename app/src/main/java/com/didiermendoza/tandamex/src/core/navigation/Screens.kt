@@ -13,3 +13,6 @@ object HomeRoute
 
 @Serializable
 object ProfileRoute
+
+@Serializable
+object WalletRoute

@@ -21,6 +21,7 @@ import com.didiermendoza.tandamex.src.features.Profile.presentation.viewmodels.P
 @Composable
 fun ProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel(),
+    onNavigateToWallet: () -> Unit,
     onBackClick: () -> Unit,
     onLogoutClick: () -> Unit
 ) {
@@ -113,6 +114,7 @@ fun ProfileScreen(
 
                 if (!isEditing) {
                     ProfileSettingsMenu(
+                        onWalletClick = onNavigateToWallet,
                         onEditClick = { viewModel.toggleEditMode() },
                         onLogoutClick = onLogoutClick
                     )

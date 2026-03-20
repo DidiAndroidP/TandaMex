@@ -181,6 +181,7 @@ fun ProfileForm(
 
 @Composable
 fun ProfileSettingsMenu(
+    onWalletClick: () -> Unit,
     onEditClick: () -> Unit,
     onLogoutClick: () -> Unit
 ) {
@@ -192,6 +193,17 @@ fun ProfileSettingsMenu(
             Text("Cuenta", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
             ProfileOptionItem(icon = Icons.Default.Edit, title = "Editar Perfil", subtitle = "Cambiar nombre, teléfono y foto", onClick = onEditClick)
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text("Finanzas", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+            ProfileOptionItem(
+                icon = Icons.Default.AccountBalanceWallet, // Ícono de billetera
+                title = "Mi Billetera",
+                subtitle = "Consultar saldo y métodos de pago",
+                onClick = onWalletClick
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 

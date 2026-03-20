@@ -10,6 +10,7 @@ import com.didiermendoza.tandamex.src.features.Register.navigation.registerNavGr
 import com.didiermendoza.tandamex.src.features.Home.navigate.homeNavGraph
 import com.didiermendoza.tandamex.src.features.Profile.navigate.profileNavGraph
 import com.didiermendoza.tandamex.src.features.Tanda.navigation.tandaNavGraph
+import com.didiermendoza.tandamex.src.features.wallet.navigate.walletNavGraph
 
 @Composable
 fun NavigationWrapper() {
@@ -36,5 +37,6 @@ fun NavigationWrapper() {
         homeNavGraph(navController)
         profileNavGraph(navController)
         tandaNavGraph(navController)
+        walletNavGraph(navController)
     }
 }

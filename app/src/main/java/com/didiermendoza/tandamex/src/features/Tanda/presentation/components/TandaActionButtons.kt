@@ -38,9 +38,11 @@ fun TandaActionButtons(
                 realCount = realCount,
                 isLoading = isLoading,
                 allPaid = allPaid,
+                hasCurrentUserPaid = hasCurrentUserPaid,
                 onStart = onStart,
                 onFinish = onFinish,
-                onDelete = onDelete
+                onDelete = onDelete,
+                onPay = onPay
             )
         } else {
             UserControls(
@@ -62,9 +64,11 @@ fun AdminControls(
     realCount: Int,
     isLoading: Boolean,
     allPaid: Boolean,
+    hasCurrentUserPaid: Boolean,
     onStart: () -> Unit,
     onFinish: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onPay: () -> Unit
 ) {
     val isInProgress = tanda.status == "IN_PROGRESS"
     val isCreated = tanda.status == "CREATED"
@@ -115,6 +119,25 @@ fun AdminControls(
     }
 
     if (isCreated || isInProgress) {
+
+        // 👇 BOTÓN PARA QUE EL ADMIN PAGUE SU PARTE 👇
+        if (isCreated && !hasCurrentUserPaid) {
+            Button(
+                onClick = onPay,
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                enabled = !isLoading,
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+                } else {
+                    Text("Pagar mi aportación", style = MaterialTheme.typography.titleMedium)
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+
         Button(
             onClick = {
                 if (isInProgress) {

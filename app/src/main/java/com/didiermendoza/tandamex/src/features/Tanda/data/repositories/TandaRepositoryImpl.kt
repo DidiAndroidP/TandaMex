@@ -1,6 +1,7 @@
 package com.didiermendoza.tandamex.src.features.Tanda.data.repositories
 
 import com.didiermendoza.tandamex.src.core.database.dao.ScheduleDao
+import com.didiermendoza.tandamex.src.core.database.dao.TandaDao
 import com.didiermendoza.tandamex.src.core.database.dao.TandaDetailDao
 import com.didiermendoza.tandamex.src.core.database.dao.TandaMemberDao
 import com.didiermendoza.tandamex.src.core.database.dao.TandaPaymentDao
@@ -27,6 +28,7 @@ class TandaRepositoryImpl @Inject constructor(
     private val api: TandaApiService,
     private val detailDao: TandaDetailDao,
     private val memberDao: TandaMemberDao,
+    private val tandaDao: TandaDao,
     private val scheduleDao: ScheduleDao,
     private val walletDao: WalletDao,
     private val tandaPaymentDao: TandaPaymentDao
@@ -141,10 +143,9 @@ class TandaRepositoryImpl @Inject constructor(
             val response = api.leaveTanda(tandaId)
             if (response.isSuccessful && response.body() != null) {
 
-                // Si el usuario tenía un pago registrado localmente, lo reembolsamos
                 if (tandaPaymentDao.hasUserPaid(tandaId, userId)) {
                     walletDao.addBalance(userId, amountToRefund)
-                    tandaPaymentDao.deletePaymentsByTanda(tandaId) // O si creaste el método específico por user, úsalo aquí
+                    tandaPaymentDao.deleteUserPayment(tandaId, userId)
                 }
 
                 Result.success("Saliste de la tanda. Tu dinero fue reembolsado.")
@@ -186,10 +187,13 @@ class TandaRepositoryImpl @Inject constructor(
         return try {
             val response = api.deleteTanda(tandaId)
             if (response.isSuccessful && response.body() != null) {
+
                 detailDao.deleteTandaDetail(tandaId)
                 memberDao.deleteMembersByTanda(tandaId)
                 scheduleDao.deleteScheduleSummary(tandaId)
                 scheduleDao.deleteTurnos(tandaId)
+                tandaDao.deleteTanda(tandaId)
+
                 Result.success(response.body()!!.message)
             } else {
                 val errorMessage = when (response.code()) {

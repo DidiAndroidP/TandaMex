@@ -13,6 +13,8 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Savings
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,6 +33,7 @@ import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
@@ -51,9 +54,7 @@ fun HomeScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) {
-        viewModel.loadData()
-    }
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
 
     if (showWalletDialog) {
         AlertDialog(
@@ -104,62 +105,68 @@ fun HomeScreen(
             }
         }
     ) { paddingValues ->
-        Column(
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = { viewModel.refreshData() },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            HomeHeader(
-                userName = userName,
-                userPhoto = userPhoto,
-                onProfileClick = onNavigateToProfile
-            )
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                HomeHeader(
+                    userName = userName,
+                    userPhoto = userPhoto,
+                    onProfileClick = onNavigateToProfile
+                )
 
-            Crossfade(targetState = isLoading, label = "HomeState") { loading ->
-                if (loading) {
-                    Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-                        repeat(3) {
-                            SkeletonCard()
-                            Spacer(modifier = Modifier.height(12.dp))
-                        }
-                    }
-                } else if (error != null) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(text = error ?: "Error desconocido", color = MaterialTheme.colorScheme.error)
-                    }
-                } else if (tandas.isEmpty()) {
-                    EmptyState()
-                } else {
-                    LazyColumn(
-                        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(tandas) { tanda ->
-                            AnimatedVisibility(
-                                visible = true,
-                                enter = slideInVertically(initialOffsetY = { it / 2 }) + fadeIn()
-                            ) {
-                                TandaItemCard(
-                                    title = tanda.name,
-                                    amount = currencyFormatter.format(tanda.amount),
-                                    periodicity = when (tanda.frequency) {
-                                        "weekly" -> "Semanal"
-                                        "biweekly" -> "Quincenal"
-                                        "monthly" -> "Mensual"
-                                        else -> tanda.frequency
-                                    },
-                                    progress = tanda.progress,
-                                    membersCount = tanda.totalMembers,
-                                    status = tanda.status,
-                                    onClick = { onNavigateToDetail(tanda.id) }
-                                )
+                Crossfade(targetState = isLoading, label = "HomeState") { loading ->
+                    if (loading) {
+                        Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+                            repeat(3) {
+                                SkeletonCard()
+                                Spacer(modifier = Modifier.height(12.dp))
                             }
                         }
-                        item { Spacer(modifier = Modifier.height(80.dp)) }
+                    } else if (error != null) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text(text = error ?: "Error desconocido", color = MaterialTheme.colorScheme.error)
+                        }
+                    } else if (tandas.isEmpty()) {
+                        EmptyState()
+                    } else {
+                        LazyColumn(
+                            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(tandas) { tanda ->
+                                AnimatedVisibility(
+                                    visible = true,
+                                    enter = slideInVertically(initialOffsetY = { it / 2 }) + fadeIn()
+                                ) {
+                                    TandaItemCard(
+                                        title = tanda.name,
+                                        amount = currencyFormatter.format(tanda.amount),
+                                        periodicity = when (tanda.frequency) {
+                                            "weekly" -> "Semanal"
+                                            "biweekly" -> "Quincenal"
+                                            "monthly" -> "Mensual"
+                                            else -> tanda.frequency
+                                        },
+                                        progress = tanda.progress,
+                                        membersCount = tanda.totalMembers,
+                                        status = tanda.status,
+                                        onClick = { onNavigateToDetail(tanda.id) }
+                                    )
+                                }
+                            }
+                            item { Spacer(modifier = Modifier.height(80.dp)) }
+                        }
                     }
                 }
             }
-        }
+        } // Cierre del PullToRefreshBox
     }
 }
 

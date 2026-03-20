@@ -1,5 +1,4 @@
 package com.didiermendoza.tandamex.src.features.Tanda.data.datasources.remote.model
-
 import com.google.gson.annotations.SerializedName
 
 data class CreateTandaRequestDto(

@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import com.didiermendoza.tandamex.src.core.database.entities.TandaMemberEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -17,4 +18,10 @@ interface TandaMemberDao {
 
     @Query("DELETE FROM tanda_members WHERE tandaId = :tandaId")
     suspend fun deleteMembersByTanda(tandaId: Int)
+
+    @Transaction
+    suspend fun replaceTandaMembers(tandaId: Int, members: List<TandaMemberEntity>) {
+        deleteMembersByTanda(tandaId)
+        insertTandaMembers(members)
+    }
 }

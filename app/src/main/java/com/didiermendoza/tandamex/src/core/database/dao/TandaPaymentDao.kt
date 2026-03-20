@@ -20,4 +20,10 @@ interface TandaPaymentDao {
 
     @Query("DELETE FROM tanda_payments WHERE tandaId = :tandaId")
     suspend fun deletePaymentsByTanda(tandaId: Int)
+
+    @Query("DELETE FROM tanda_payments WHERE tandaId = :tandaId AND userId = :userId")
+    suspend fun deleteUserPayment(tandaId: Int, userId: Int)
+
+    @Query("DELETE FROM tanda_payments WHERE tandaId = :tandaId AND userId = :userId")
+    suspend fun deletePaymentsByTandaAndUser(tandaId: Int, userId: Int)
 }

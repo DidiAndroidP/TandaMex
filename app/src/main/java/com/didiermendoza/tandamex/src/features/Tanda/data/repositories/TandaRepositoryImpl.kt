@@ -1,8 +1,12 @@
 package com.didiermendoza.tandamex.src.features.Tanda.data.repositories
 
 import com.didiermendoza.tandamex.src.core.database.dao.ScheduleDao
+import com.didiermendoza.tandamex.src.core.database.dao.TandaDao
 import com.didiermendoza.tandamex.src.core.database.dao.TandaDetailDao
 import com.didiermendoza.tandamex.src.core.database.dao.TandaMemberDao
+import com.didiermendoza.tandamex.src.core.database.dao.TandaPaymentDao
+import com.didiermendoza.tandamex.src.core.database.dao.WalletDao
+import com.didiermendoza.tandamex.src.core.database.entities.TandaPaymentEntity
 import com.didiermendoza.tandamex.src.features.Tanda.data.datasource.remote.api.TandaApiService
 import com.didiermendoza.tandamex.src.features.Tanda.data.datasources.remote.model.CreateTandaRequestDto
 import com.didiermendoza.tandamex.src.features.Tanda.domain.entities.TandaDetail
@@ -24,7 +28,10 @@ class TandaRepositoryImpl @Inject constructor(
     private val api: TandaApiService,
     private val detailDao: TandaDetailDao,
     private val memberDao: TandaMemberDao,
-    private val scheduleDao: ScheduleDao
+    private val tandaDao: TandaDao,
+    private val scheduleDao: ScheduleDao,
+    private val walletDao: WalletDao,
+    private val tandaPaymentDao: TandaPaymentDao
 ) : TandaRepository {
 
     override suspend fun createTanda(
@@ -48,8 +55,39 @@ class TandaRepositoryImpl @Inject constructor(
     }
 
     override fun getTandaMembers(tandaId: Int): Flow<List<TandaMember>> {
-        return memberDao.getTandaMembers(tandaId).map { entities ->
-            entities.map { it.toDomain() }
+        return combine(
+            memberDao.getTandaMembers(tandaId),
+            tandaPaymentDao.getPaymentsByTanda(tandaId)
+        ) { apiMembers, localPayments ->
+            apiMembers.map { entity ->
+                val domain = entity.toDomain()
+                val hasPaidLocally = localPayments.any { it.userId == entity.id }
+                domain.copy(hasPaid = domain.hasPaid || hasPaidLocally)
+            }
+        }
+    }
+
+    override suspend fun payLocalContribution(tandaId: Int, userId: Int, amount: Double): Result<String> {
+        return try {
+            val wallet = walletDao.getWallet(userId)
+            if (wallet != null && wallet.balance >= amount) {
+
+                walletDao.deductBalance(userId, amount)
+
+                tandaPaymentDao.insertPayment(
+                    TandaPaymentEntity(
+                        tandaId = tandaId,
+                        userId = userId,
+                        amountPaid = amount,
+                        date = "HOY"
+                    )
+                )
+                Result.success("Pago realizado con éxito")
+            } else {
+                Result.failure(Exception("Saldo insuficiente en tu billetera"))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("Error al procesar el pago local"))
         }
     }
 
@@ -100,11 +138,17 @@ class TandaRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun leaveTanda(tandaId: Int): Result<String> {
+    override suspend fun leaveTanda(tandaId: Int, userId: Int, amountToRefund: Double): Result<String> {
         return try {
             val response = api.leaveTanda(tandaId)
             if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!.message)
+
+                if (tandaPaymentDao.hasUserPaid(tandaId, userId)) {
+                    walletDao.addBalance(userId, amountToRefund)
+                    tandaPaymentDao.deleteUserPayment(tandaId, userId)
+                }
+
+                Result.success("Saliste de la tanda. Tu dinero fue reembolsado.")
             } else {
                 Result.failure(Exception("Error al salir: ${response.code()}"))
             }
@@ -143,10 +187,13 @@ class TandaRepositoryImpl @Inject constructor(
         return try {
             val response = api.deleteTanda(tandaId)
             if (response.isSuccessful && response.body() != null) {
+
                 detailDao.deleteTandaDetail(tandaId)
                 memberDao.deleteMembersByTanda(tandaId)
                 scheduleDao.deleteScheduleSummary(tandaId)
                 scheduleDao.deleteTurnos(tandaId)
+                tandaDao.deleteTanda(tandaId)
+
                 Result.success(response.body()!!.message)
             } else {
                 val errorMessage = when (response.code()) {

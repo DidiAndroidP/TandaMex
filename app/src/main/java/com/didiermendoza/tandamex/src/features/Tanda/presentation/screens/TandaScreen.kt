@@ -33,6 +33,7 @@ fun TandaScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
     val deleteSuccess by viewModel.deleteSuccess.collectAsStateWithLifecycle()
+    val accumulatedAmount by viewModel.accumulatedAmount.collectAsStateWithLifecycle()
 
     val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.US)
     val snackbarHostState = remember { SnackbarHostState() }
@@ -66,6 +67,9 @@ fun TandaScreen(
             if (tanda != null) {
                 val displayMembersCount = if (members.isNotEmpty()) members.size else tanda!!.currentMembers
 
+                val allPaid = members.isNotEmpty() && members.count { it.hasPaid } == tanda!!.totalMembers
+                val hasCurrentUserPaid = members.find { it.id == currentUserId }?.hasPaid == true
+
                 Surface(
                     shadowElevation = 16.dp,
                     color = MaterialTheme.colorScheme.surface
@@ -74,11 +78,14 @@ fun TandaScreen(
                         tanda = tanda!!,
                         realCount = displayMembersCount,
                         isLoading = isLoading,
+                        allPaid = allPaid,
+                        hasCurrentUserPaid = hasCurrentUserPaid,
                         onJoin = { viewModel.joinTanda() },
                         onLeave = { viewModel.leaveTanda() },
                         onStart = { viewModel.startTanda() },
                         onFinish = { viewModel.finishTanda() },
-                        onDelete = { viewModel.deleteTanda() }
+                        onDelete = { viewModel.deleteTanda() },
+                        onPay = { viewModel.payMyContribution() }
                     )
                 }
             }
@@ -98,9 +105,12 @@ fun TandaScreen(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     val displayMembersCount = if (members.isNotEmpty()) members.size else tanda!!.currentMembers
+                    val expectedTotal = tanda!!.contributionAmount * tanda!!.totalMembers
 
                     TandaDetailInfo(
                         amount = currencyFormatter.format(tanda!!.contributionAmount),
+                        accumulatedAmount = accumulatedAmount,
+                        totalExpectedAmount = expectedTotal,
                         frequency = when (tanda!!.frequency) {
                             "weekly" -> "Semanal"
                             "biweekly" -> "Quincenal"

@@ -30,6 +30,7 @@ class TandaViewModel @Inject constructor(
     private val deleteTandaUseCase: DeleteTandaUseCase,
     private val generateScheduleUseCase: GenerateScheduleUseCase,
     private val getMyProfileUseCase: GetMyProfileUseCase,
+    private val payLocalContributionUseCase: PayLocalContributionUseCase,
     private val vibrationManager: VibrationManager
 ) : ViewModel() {
 
@@ -55,6 +56,9 @@ class TandaViewModel @Inject constructor(
     val deleteSuccess = _deleteSuccess.asStateFlow()
 
     private var observeJob: Job? = null
+
+    private val _accumulatedAmount = MutableStateFlow(0.0)
+    val accumulatedAmount = _accumulatedAmount.asStateFlow()
 
     fun loadTandaDetail(tandaId: Int) {
         _isLoading.value = true
@@ -83,11 +87,35 @@ class TandaViewModel @Inject constructor(
 
             getTandaMembersUseCase(tandaId).onEach { list ->
                 _members.value = list
+                val cost = _tanda.value?.contributionAmount ?: 0.0
+                val paidMembersCount = list.count { it.hasPaid }
+                _accumulatedAmount.value = paidMembersCount * cost
             }.launchIn(this)
 
             getScheduleUseCase(tandaId).onEach { data ->
                 _scheduleData.value = data
             }.launchIn(this)
+        }
+    }
+
+    fun payMyContribution() {
+        val tandaInfo = _tanda.value ?: return
+        val userId = _currentUserId.value ?: return
+
+        _isLoading.value = true
+        viewModelScope.launch {
+            payLocalContributionUseCase(tandaInfo.id, userId, tandaInfo.contributionAmount).fold(
+                onSuccess = { msg ->
+                    _message.value = msg
+                    vibrationManager.vibrate(200)
+                    syncData(tandaInfo.id)
+                },
+                onFailure = { err ->
+                    _message.value = err.message
+                    _isLoading.value = false
+                    vibrationManager.vibrateError()
+                }
+            )
         }
     }
 
@@ -107,7 +135,25 @@ class TandaViewModel @Inject constructor(
     }
 
     fun leaveTanda() {
-        performAction { leaveTandaUseCase(_tanda.value!!.id) }
+        val tandaInfo = _tanda.value ?: return
+        val userId = _currentUserId.value ?: return
+
+        _isLoading.value = true
+        viewModelScope.launch {
+            // Pasamos los 3 parámetros que nos pide el nuevo UseCase
+            leaveTandaUseCase(tandaInfo.id, userId, tandaInfo.contributionAmount).fold(
+                onSuccess = { msg ->
+                    _message.value = msg
+                    vibrationManager.vibrate(150)
+                    syncData(tandaInfo.id)
+                },
+                onFailure = { err ->
+                    _isLoading.value = false
+                    _message.value = err.message
+                    vibrationManager.vibrateError()
+                }
+            )
+        }
     }
 
     fun startTanda() {

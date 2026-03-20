@@ -14,14 +14,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import java.text.NumberFormat
+import java.util.Locale
 
 @Composable
 fun TandaDetailInfo(
     amount: String,
+    accumulatedAmount: Double,
+    totalExpectedAmount: Double,
     frequency: String,
     members: String,
     status: String
 ) {
+    val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.US)
     val statusColor = when (status.lowercase()) {
         "abierta" -> Color(0xFF3F51B5)
         "en curso" -> Color(0xFF4CAF50)
@@ -71,17 +76,40 @@ fun TandaDetailInfo(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text(
-                text = amount,
-                style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Text(
-                text = "Monto a recibir",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.secondary
-            )
+            // RECAUDACIÓN Y MONTO ACTUALIZADO
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = amount,
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "Aportación por persona",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
+
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = currencyFormatter.format(accumulatedAmount),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = if (accumulatedAmount >= totalExpectedAmount && totalExpectedAmount > 0) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Recaudado de ${currencyFormatter.format(totalExpectedAmount)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))

@@ -14,9 +14,10 @@ interface TandaRepository {
     suspend fun syncTandaDetailAndMembers(tandaId: Int)
     suspend fun generateSchedule(tandaId: Int): Result<ScheduleData>
     suspend fun joinTanda(tandaId: Int): Result<String>
-    suspend fun leaveTanda(tandaId: Int): Result<String>
+    suspend fun leaveTanda(tandaId: Int, userId: Int, amountToRefund: Double): Result<String>
     suspend fun startTanda(tandaId: Int): Result<String>
     suspend fun finishTanda(tandaId: Int): Result<String>
     suspend fun deleteTanda(tandaId: Int): Result<String>
     suspend fun getTandaSummary(tandaId: Int): Result<TandaSummary>
+    suspend fun payLocalContribution(tandaId: Int, userId: Int, amount: Double): Result<String>
 }

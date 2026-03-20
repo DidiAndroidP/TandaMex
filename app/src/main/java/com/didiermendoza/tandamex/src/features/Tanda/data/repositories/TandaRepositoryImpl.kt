@@ -118,7 +118,7 @@ class TandaRepositoryImpl @Inject constructor(
 
             val membersResponse = api.getTandaMembers(tandaId)
             if (membersResponse.isSuccessful && membersResponse.body() != null) {
-                memberDao.insertTandaMembers(membersResponse.body()!!.map { it.toEntity(tandaId) })
+                memberDao.replaceTandaMembers(tandaId, membersResponse.body()!!.map { it.toEntity(tandaId) })
             }
         } catch (e: Exception) {
             e.printStackTrace()

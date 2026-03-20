@@ -3,6 +3,8 @@ package com.didiermendoza.tandamex.src.features.Home.presentation.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.didiermendoza.tandamex.src.features.Home.domain.entities.Tanda
+import com.didiermendoza.tandamex.src.features.Home.domain.usecases.CheckWalletExistsUseCase
+import com.didiermendoza.tandamex.src.features.wallet.domain.usecases.CreateDefaultWalletUseCase
 import com.didiermendoza.tandamex.src.features.Home.domain.usecases.GetAvailableTandasUseCase
 import com.didiermendoza.tandamex.src.features.Home.domain.usecases.SyncTandasUseCase
 import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.GetMyProfileUseCase
@@ -18,7 +20,9 @@ import javax.inject.Inject
 class HomeViewModel @Inject constructor(
     private val getAvailableTandasUseCase: GetAvailableTandasUseCase,
     private val syncTandasUseCase: SyncTandasUseCase,
-    private val getMyProfileUseCase: GetMyProfileUseCase
+    private val getMyProfileUseCase: GetMyProfileUseCase,
+    private val checkWalletExistsUseCase: CheckWalletExistsUseCase,
+    private val createDefaultWalletUseCase: CreateDefaultWalletUseCase
 ) : ViewModel() {
 
     private val _tandas = MutableStateFlow<List<Tanda>>(emptyList())
@@ -35,6 +39,13 @@ class HomeViewModel @Inject constructor(
 
     private val _userPhoto = MutableStateFlow<String?>(null)
     val userPhoto = _userPhoto.asStateFlow()
+
+    private var currentUserId: Int? = null
+    private val _hasWallet = MutableStateFlow(true)
+    val hasWallet = _hasWallet.asStateFlow()
+
+    private val _showWalletDialog = MutableStateFlow(false)
+    val showWalletDialog = _showWalletDialog.asStateFlow()
 
     init {
         observeTandas()
@@ -57,10 +68,14 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             getMyProfileUseCase().fold(
                 onSuccess = { user ->
+                    currentUserId = user.id
                     _userName.value = user.name.split(" ").firstOrNull() ?: user.name
                     _userPhoto.value = user.photo
+
+                    checkUserWallet(user.id)
                 },
                 onFailure = {
+                    _error.value = "Error al obtener perfil"
                 }
             )
         }
@@ -74,5 +89,30 @@ class HomeViewModel @Inject constructor(
                 _isLoading.value = false
             }
         }
+    }
+
+    private suspend fun checkUserWallet(userId: Int) {
+        val exists = checkWalletExistsUseCase(userId)
+        _hasWallet.value = exists
+        if (!exists) {
+            _showWalletDialog.value = true
+        }
+    }
+
+    fun acceptWalletCreation() {
+        viewModelScope.launch {
+            currentUserId?.let { userId ->
+                _isLoading.value = true
+                createDefaultWalletUseCase(userId)
+                _hasWallet.value = true
+                _showWalletDialog.value = false
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun declineWalletCreation() {
+        _showWalletDialog.value = false
+        _hasWallet.value = false
     }
 }

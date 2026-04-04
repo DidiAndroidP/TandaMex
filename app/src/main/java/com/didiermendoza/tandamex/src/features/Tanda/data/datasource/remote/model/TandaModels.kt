@@ -45,3 +45,13 @@ data class TandaSummaryDto(
     @SerializedName("activeMembers") val activeMembers: Int,
     @SerializedName("status") val status: String
 )
+
+data class PaymentSessionRequestDto(
+    @SerializedName("tandaId") val tandaId: Int,
+    @SerializedName("period") val period: Int,
+    @SerializedName("amount") val amount: Double
+)
+
+data class PaymentSessionResponseDto(
+    @SerializedName("url") val url: String
+)

@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -34,9 +35,18 @@ fun TandaScreen(
     val message by viewModel.message.collectAsStateWithLifecycle()
     val deleteSuccess by viewModel.deleteSuccess.collectAsStateWithLifecycle()
     val accumulatedAmount by viewModel.accumulatedAmount.collectAsStateWithLifecycle()
+    val stripeUrl by viewModel.stripeUrl.collectAsStateWithLifecycle()
 
     val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.US)
     val snackbarHostState = remember { SnackbarHostState() }
+    val uriHandler = LocalUriHandler.current
+
+    LaunchedEffect(stripeUrl) {
+        stripeUrl?.let { url ->
+            uriHandler.openUri(url)
+            viewModel.onStripeUrlOpened()
+        }
+    }
 
     LaunchedEffect(message) {
         message?.let {

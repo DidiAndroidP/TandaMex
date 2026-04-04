@@ -22,6 +22,7 @@ import com.didiermendoza.tandamex.src.features.Tanda.data.datasources.local.mapp
 import com.didiermendoza.tandamex.src.features.Tanda.data.datasources.local.mapper.toSummaryEntity
 import com.didiermendoza.tandamex.src.features.Tanda.data.datasources.remote.mapper.toEntity
 import com.didiermendoza.tandamex.src.features.Tanda.data.datasources.remote.mapper.toDomain
+import com.didiermendoza.tandamex.src.features.Tanda.data.datasources.remote.model.PaymentSessionRequestDto
 import com.didiermendoza.tandamex.src.features.Tanda.domain.entities.ScheduleData
 
 class TandaRepositoryImpl @Inject constructor(
@@ -67,27 +68,18 @@ class TandaRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun payLocalContribution(tandaId: Int, userId: Int, amount: Double): Result<String> {
+    override suspend fun createPaymentSession(tandaId: Int, period: Int, amount: Double): Result<String> {
         return try {
-            val wallet = walletDao.getWallet(userId)
-            if (wallet != null && wallet.balance >= amount) {
+            val request = PaymentSessionRequestDto(tandaId, period, amount)
+            val response = api.createPaymentSession(request)
 
-                walletDao.deductBalance(userId, amount)
-
-                tandaPaymentDao.insertPayment(
-                    TandaPaymentEntity(
-                        tandaId = tandaId,
-                        userId = userId,
-                        amountPaid = amount,
-                        date = "HOY"
-                    )
-                )
-                Result.success("Pago realizado con éxito")
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!.url)
             } else {
-                Result.failure(Exception("Saldo insuficiente en tu billetera"))
+                Result.failure(Exception("Error al generar pago: ${response.code()}"))
             }
         } catch (e: Exception) {
-            Result.failure(Exception("Error al procesar el pago local"))
+            Result.failure(Exception("No se pudo conectar con el servidor de pagos"))
         }
     }
 

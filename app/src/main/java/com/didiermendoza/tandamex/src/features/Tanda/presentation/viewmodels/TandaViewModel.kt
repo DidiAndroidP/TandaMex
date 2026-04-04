@@ -30,7 +30,7 @@ class TandaViewModel @Inject constructor(
     private val deleteTandaUseCase: DeleteTandaUseCase,
     private val generateScheduleUseCase: GenerateScheduleUseCase,
     private val getMyProfileUseCase: GetMyProfileUseCase,
-    private val payLocalContributionUseCase: PayLocalContributionUseCase,
+    private val createPaymentSessionUseCase: CreatePaymentSessionUseCase,
     private val vibrationManager: VibrationManager
 ) : ViewModel() {
 
@@ -54,6 +54,9 @@ class TandaViewModel @Inject constructor(
 
     private val _deleteSuccess = MutableStateFlow(false)
     val deleteSuccess = _deleteSuccess.asStateFlow()
+
+    private val _stripeUrl = MutableStateFlow<String?>(null)
+    val stripeUrl = _stripeUrl.asStateFlow()
 
     private var observeJob: Job? = null
 
@@ -100,15 +103,13 @@ class TandaViewModel @Inject constructor(
 
     fun payMyContribution() {
         val tandaInfo = _tanda.value ?: return
-        val userId = _currentUserId.value ?: return
 
         _isLoading.value = true
         viewModelScope.launch {
-            payLocalContributionUseCase(tandaInfo.id, userId, tandaInfo.contributionAmount).fold(
-                onSuccess = { msg ->
-                    _message.value = msg
-                    vibrationManager.vibrate(200)
-                    syncData(tandaInfo.id)
+            createPaymentSessionUseCase(tandaInfo.id, 1, tandaInfo.contributionAmount).fold(
+                onSuccess = { url ->
+                    _isLoading.value = false
+                    _stripeUrl.value = url
                 },
                 onFailure = { err ->
                     _message.value = err.message
@@ -117,6 +118,10 @@ class TandaViewModel @Inject constructor(
                 }
             )
         }
+    }
+
+    fun onStripeUrlOpened() {
+        _stripeUrl.value = null
     }
 
     private fun syncData(tandaId: Int) {
@@ -140,7 +145,6 @@ class TandaViewModel @Inject constructor(
 
         _isLoading.value = true
         viewModelScope.launch {
-            // Pasamos los 3 parámetros que nos pide el nuevo UseCase
             leaveTandaUseCase(tandaInfo.id, userId, tandaInfo.contributionAmount).fold(
                 onSuccess = { msg ->
                     _message.value = msg

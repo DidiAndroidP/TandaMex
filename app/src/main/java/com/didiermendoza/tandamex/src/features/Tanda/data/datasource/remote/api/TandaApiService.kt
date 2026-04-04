@@ -33,4 +33,7 @@ interface TandaApiService {
     suspend fun generateSchedule(@Path("id") tandaId: Int): Response<ScheduleResponseDto>
     @GET("tandas/{id}/summary")
     suspend fun getTandaSummary(@Path("id") tandaId: Int): Response<TandaSummaryDto>
+
+    @POST("payments/session")
+    suspend fun createPaymentSession(@Body request: PaymentSessionRequestDto): Response<PaymentSessionResponseDto>
 }

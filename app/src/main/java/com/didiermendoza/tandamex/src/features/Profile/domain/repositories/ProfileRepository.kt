@@ -7,4 +7,5 @@ interface ProfileRepository {
     suspend fun getMyProfile(): Result<User>
     suspend fun updateProfile(name: String, phone: String): Result<String>
     suspend fun uploadProfilePhoto(photoFile: File): Result<String>
+    suspend fun sendFcmToken(token: String): Result<String>
 }

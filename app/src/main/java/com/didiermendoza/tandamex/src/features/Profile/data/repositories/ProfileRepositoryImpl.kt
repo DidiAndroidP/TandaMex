@@ -1,6 +1,7 @@
 package com.didiermendoza.tandamex.src.features.Profile.data.repositories
 
 import com.didiermendoza.tandamex.src.features.Profile.data.datasource.remote.api.ProfileApiService
+import com.didiermendoza.tandamex.src.features.Profile.data.datasource.remote.api.FcmTokenRequest // <-- IMPORTANTE
 import com.didiermendoza.tandamex.src.features.Profile.data.datasource.remote.mapper.toDomain
 import com.didiermendoza.tandamex.src.features.Profile.data.datasource.remote.model.UpdateProfileRequestDto
 import com.didiermendoza.tandamex.src.features.Profile.domain.entities.User
@@ -54,6 +55,21 @@ class ProfileRepositoryImpl @Inject constructor(
                 Result.success(response.body()!!.message)
             } else {
                 Result.failure(Exception("Error al subir foto: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun sendFcmToken(token: String): Result<String> {
+        return try {
+            val request = FcmTokenRequest(fcmToken = token)
+            val response = api.sendFcmToken(request)
+
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!.message)
+            } else {
+                Result.failure(Exception("Error enviando FCM Token: ${response.code()}"))
             }
         } catch (e: Exception) {
             Result.failure(e)

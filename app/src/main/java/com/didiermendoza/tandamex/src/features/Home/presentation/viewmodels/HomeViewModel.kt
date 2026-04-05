@@ -8,6 +8,8 @@ import com.didiermendoza.tandamex.src.features.wallet.domain.usecases.CreateDefa
 import com.didiermendoza.tandamex.src.features.Home.domain.usecases.GetAvailableTandasUseCase
 import com.didiermendoza.tandamex.src.features.Home.domain.usecases.SyncTandasUseCase
 import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.GetMyProfileUseCase
+import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.SendFcmTokenUseCase
+import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,7 +24,8 @@ class HomeViewModel @Inject constructor(
     private val syncTandasUseCase: SyncTandasUseCase,
     private val getMyProfileUseCase: GetMyProfileUseCase,
     private val checkWalletExistsUseCase: CheckWalletExistsUseCase,
-    private val createDefaultWalletUseCase: CreateDefaultWalletUseCase
+    private val createDefaultWalletUseCase: CreateDefaultWalletUseCase,
+    private val sendFcmTokenUseCase: SendFcmTokenUseCase
 ) : ViewModel() {
 
     private val _tandas = MutableStateFlow<List<Tanda>>(emptyList())
@@ -76,6 +79,8 @@ class HomeViewModel @Inject constructor(
                     _userPhoto.value = user.photo
 
                     checkUserWallet(user.id)
+
+                    registerDeviceToken()
                 },
                 onFailure = {
                     _error.value = "Error al obtener perfil"
@@ -90,6 +95,25 @@ class HomeViewModel @Inject constructor(
                 _error.value = "Error de conexión: Mostrando datos guardados."
             } finally {
                 _isLoading.value = false
+            }
+        }
+    }
+
+    private fun registerDeviceToken() {
+        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+            if (!task.isSuccessful) {
+                println("🔥 FCM: Error al obtener el token de Firebase")
+                return@addOnCompleteListener
+            }
+
+            val token = task.result
+            println("🔥 FCM Token obtenido:")
+
+            viewModelScope.launch {
+                sendFcmTokenUseCase(token).fold(
+                    onSuccess = { println("✅ Token guardado en Backend exitosamente") },
+                    onFailure = { println("❌ Error al guardar token en Backend: ${it.message}") }
+                )
             }
         }
     }

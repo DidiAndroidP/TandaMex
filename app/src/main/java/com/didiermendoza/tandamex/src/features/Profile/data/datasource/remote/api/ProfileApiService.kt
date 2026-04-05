@@ -2,7 +2,7 @@ package com.didiermendoza.tandamex.src.features.Profile.data.datasource.remote.a
 
 import com.didiermendoza.tandamex.src.features.Profile.data.datasource.remote.model.UpdateProfileRequestDto
 import com.didiermendoza.tandamex.src.features.Profile.data.datasource.remote.model.UserDto
-import com.didiermendoza.tandamex.src.features.Tanda.data.datasources.remote.model.GenericMessageDto // Asumiendo que usas este para respuestas genéricas
+import com.didiermendoza.tandamex.src.features.Tanda.data.datasources.remote.model.GenericMessageDto
 import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.Body
@@ -11,6 +11,10 @@ import retrofit2.http.Multipart
 import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Part
+
+data class FcmTokenRequest(
+    val fcmToken: String
+)
 
 interface ProfileApiService {
     @GET("users/me")
@@ -24,4 +28,7 @@ interface ProfileApiService {
     suspend fun uploadProfilePhoto(
         @Part photo: MultipartBody.Part
     ): Response<GenericMessageDto>
+
+    @POST("users/fcm-token")
+    suspend fun sendFcmToken(@Body request: FcmTokenRequest): Response<GenericMessageDto>
 }

@@ -1,5 +1,9 @@
 package com.didiermendoza.tandamex.src.features.Home.presentation.screens
 
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -55,6 +59,22 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
 
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            println("Permiso de notificaciones concedido")
+        } else {
+            println("El usuario denegó las notificaciones")
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
 
     if (showWalletDialog) {
         AlertDialog(
@@ -166,7 +186,7 @@ fun HomeScreen(
                     }
                 }
             }
-        } // Cierre del PullToRefreshBox
+        }
     }
 }
 

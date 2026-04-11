@@ -17,6 +17,7 @@ import com.didiermendoza.tandamex.src.features.Tanda.domain.entities.TandaMember
 fun TandaMembersList(
     members: List<TandaMember>,
     creatorId: Int,
+    tandaStatus: String, // 👇 NUEVO: Recibimos el estado de la tanda
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
@@ -43,7 +44,11 @@ fun TandaMembersList(
             ) {
                 Column {
                     members.forEachIndexed { index, member ->
-                        MemberItem(member, isOwner = member.id == creatorId)
+                        MemberItem(
+                            member = member,
+                            isOwner = member.id == creatorId,
+                            tandaStatus = tandaStatus // Pasamos el estado al item
+                        )
                         if (index < members.size - 1) {
                             HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant, thickness = 0.5.dp)
                         }
@@ -55,7 +60,7 @@ fun TandaMembersList(
 }
 
 @Composable
-fun MemberItem(member: TandaMember, isOwner: Boolean) {
+fun MemberItem(member: TandaMember, isOwner: Boolean, tandaStatus: String) {
     ListItem(
         headlineContent = {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -78,10 +83,14 @@ fun MemberItem(member: TandaMember, isOwner: Boolean) {
             }
         },
         supportingContent = {
-            Text(
-                if (member.hasPaid) "Al corriente" else "Pendiente de pago",
-                color = if (member.hasPaid) Color(0xFF4CAF50) else MaterialTheme.colorScheme.error
-            )
+            if (tandaStatus == "CREATED") {
+                Text("Esperando inicio", color = MaterialTheme.colorScheme.outline)
+            } else {
+                Text(
+                    text = if (member.hasPaid) "Al corriente" else "Pendiente de pago",
+                    color = if (member.hasPaid) Color(0xFF2E7D32) else MaterialTheme.colorScheme.error
+                )
+            }
         },
         leadingContent = {
             Box(

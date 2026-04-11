@@ -23,33 +23,28 @@ class TandaFirebaseService : FirebaseMessagingService() {
         val channelId = "tanda_payments_channel"
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        // En Android 8.0 o superior, Google te obliga a crear un "Canal" de notificaciones
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 channelId,
-                "Actualizaciones de Tandas", // Esto es lo que el usuario ve en los ajustes de su celular
+                "Actualizaciones de Tandas",
                 NotificationManager.IMPORTANCE_HIGH
             )
             notificationManager.createNotificationChannel(channel)
         }
 
-        // Construimos la tarjetita que sale arriba
         val notification = NotificationCompat.Builder(this, channelId)
             .setContentTitle(title)
             .setContentText(body)
-            .setSmallIcon(android.R.drawable.ic_dialog_info) // TODO: Cambia esto por el logo de tu app después
-            .setAutoCancel(true) // Hace que desaparezca cuando la tocas
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .build()
 
-        // Le damos un ID al azar para que si llegan 3 pagos, salgan 3 notificaciones y no se sobreescriban
         notificationManager.notify(Random.nextInt(), notification)
     }
 
-    // Por si Google decide cambiar el token de seguridad mientras la app está cerrada
     override fun onNewToken(token: String) {
         super.onNewToken(token)
         println("🔥 FCM Token actualizado por Google: $token")
-        // La próxima vez que abra la app, tu HomeViewModel lo guardará en la BD
     }
 }

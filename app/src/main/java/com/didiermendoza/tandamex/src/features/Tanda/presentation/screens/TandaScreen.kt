@@ -77,7 +77,7 @@ fun TandaScreen(
             if (tanda != null) {
                 val displayMembersCount = if (members.isNotEmpty()) members.size else tanda!!.currentMembers
 
-                val allPaid = members.isNotEmpty() && members.count { it.hasPaid } == tanda!!.totalMembers
+                val isTandaFull = members.isNotEmpty() && displayMembersCount == tanda!!.totalMembers
                 val hasCurrentUserPaid = members.find { it.id == currentUserId }?.hasPaid == true
 
                 Surface(
@@ -88,7 +88,7 @@ fun TandaScreen(
                         tanda = tanda!!,
                         realCount = displayMembersCount,
                         isLoading = isLoading,
-                        allPaid = allPaid,
+                        allPaid = isTandaFull,
                         hasCurrentUserPaid = hasCurrentUserPaid,
                         onJoin = { viewModel.joinTanda() },
                         onLeave = { viewModel.leaveTanda() },
@@ -158,7 +158,8 @@ fun TandaScreen(
 
                     TandaMembersList(
                         members = members,
-                        creatorId = tanda!!.creatorId
+                        creatorId = tanda!!.creatorId,
+                        tandaStatus = tanda!!.status
                     )
 
                     Spacer(modifier = Modifier.height(80.dp))

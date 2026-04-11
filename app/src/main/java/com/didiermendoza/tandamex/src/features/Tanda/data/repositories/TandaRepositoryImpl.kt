@@ -6,7 +6,6 @@ import com.didiermendoza.tandamex.src.core.database.dao.TandaDetailDao
 import com.didiermendoza.tandamex.src.core.database.dao.TandaMemberDao
 import com.didiermendoza.tandamex.src.core.database.dao.TandaPaymentDao
 import com.didiermendoza.tandamex.src.core.database.dao.WalletDao
-import com.didiermendoza.tandamex.src.core.database.entities.TandaPaymentEntity
 import com.didiermendoza.tandamex.src.features.Tanda.data.datasource.remote.api.TandaApiService
 import com.didiermendoza.tandamex.src.features.Tanda.data.datasources.remote.model.CreateTandaRequestDto
 import com.didiermendoza.tandamex.src.features.Tanda.domain.entities.TandaDetail
@@ -134,12 +133,10 @@ class TandaRepositoryImpl @Inject constructor(
         return try {
             val response = api.leaveTanda(tandaId)
             if (response.isSuccessful && response.body() != null) {
-
                 if (tandaPaymentDao.hasUserPaid(tandaId, userId)) {
                     walletDao.addBalance(userId, amountToRefund)
                     tandaPaymentDao.deleteUserPayment(tandaId, userId)
                 }
-
                 Result.success("Saliste de la tanda. Tu dinero fue reembolsado.")
             } else {
                 Result.failure(Exception("Error al salir: ${response.code()}"))
@@ -179,13 +176,11 @@ class TandaRepositoryImpl @Inject constructor(
         return try {
             val response = api.deleteTanda(tandaId)
             if (response.isSuccessful && response.body() != null) {
-
                 detailDao.deleteTandaDetail(tandaId)
                 memberDao.deleteMembersByTanda(tandaId)
                 scheduleDao.deleteScheduleSummary(tandaId)
                 scheduleDao.deleteTurnos(tandaId)
                 tandaDao.deleteTanda(tandaId)
-
                 Result.success(response.body()!!.message)
             } else {
                 val errorMessage = when (response.code()) {
@@ -206,13 +201,11 @@ class TandaRepositoryImpl @Inject constructor(
             val response = api.generateSchedule(tandaId)
             if (response.isSuccessful && response.body() != null) {
                 val scheduleDomain = response.body()!!.data.toDomain()
-
                 scheduleDao.clearAndInsertSchedule(
                     tandaId = tandaId,
                     summary = scheduleDomain.toSummaryEntity(),
                     turnos = scheduleDomain.turnos.map { it.toEntity(tandaId) }
                 )
-
                 Result.success(scheduleDomain)
             } else {
                 Result.failure(Exception("Error al generar horario: ${response.code()}"))
@@ -229,6 +222,30 @@ class TandaRepositoryImpl @Inject constructor(
                 Result.success(response.body()!!.toDomain())
             } else {
                 Result.failure(Exception("Error al obtener resumen: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun syncMyTandas(): Result<List<com.didiermendoza.tandamex.src.features.Home.domain.entities.Tanda>> {
+        return try {
+            val response = api.getMyTandas()
+            if (response.isSuccessful && response.body() != null) {
+                val domainList = response.body()!!.map { dto ->
+                    com.didiermendoza.tandamex.src.features.Home.domain.entities.Tanda(
+                        id = dto.id,
+                        name = dto.name,
+                        amount = dto.contributionAmount,
+                        frequency = dto.paymentFrequency,
+                        totalMembers = dto.totalMembers,
+                        progress = 0f,
+                        status = dto.status
+                    )
+                }
+                Result.success(domainList)
+            } else {
+                Result.failure(Exception("Error al obtener mis tandas: ${response.code()}"))
             }
         } catch (e: Exception) {
             Result.failure(e)

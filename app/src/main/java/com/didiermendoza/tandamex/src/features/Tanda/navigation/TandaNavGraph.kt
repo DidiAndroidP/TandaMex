@@ -4,6 +4,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
+import androidx.navigation.navDeepLink
 import androidx.navigation.toRoute
 import com.didiermendoza.tandamex.src.core.navigation.HomeRoute
 import com.didiermendoza.tandamex.src.features.Tanda.presentation.screens.CreateTandaScreen
@@ -19,9 +20,15 @@ data class TandaDetailRoute(val tandaId: Int)
 object CreateTandaRoute
 
 fun NavGraphBuilder.tandaNavGraph(navController: NavHostController) {
-    composable<TandaDetailRoute> { backStackEntry ->
-        val route: TandaDetailRoute = backStackEntry.toRoute()
 
+    composable<TandaDetailRoute>(
+        deepLinks = listOf(
+            navDeepLink<TandaDetailRoute>(
+                basePath = "https://tandamex.dswer.xyz/tanda"
+            )
+        )
+    ) { backStackEntry ->
+        val route: TandaDetailRoute = backStackEntry.toRoute()
         val viewModel: TandaViewModel = hiltViewModel()
 
         if (viewModel.tanda.value == null) {

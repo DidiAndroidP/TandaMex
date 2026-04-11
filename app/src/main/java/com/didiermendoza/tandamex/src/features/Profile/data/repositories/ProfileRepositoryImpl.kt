@@ -1,7 +1,7 @@
 package com.didiermendoza.tandamex.src.features.Profile.data.repositories
 
 import com.didiermendoza.tandamex.src.features.Profile.data.datasource.remote.api.ProfileApiService
-import com.didiermendoza.tandamex.src.features.Profile.data.datasource.remote.api.FcmTokenRequest // <-- IMPORTANTE
+import com.didiermendoza.tandamex.src.features.Profile.data.datasources.remote.model.FcmTokenRequestDto
 import com.didiermendoza.tandamex.src.features.Profile.data.datasource.remote.mapper.toDomain
 import com.didiermendoza.tandamex.src.features.Profile.data.datasource.remote.model.UpdateProfileRequestDto
 import com.didiermendoza.tandamex.src.features.Profile.domain.entities.User
@@ -63,7 +63,7 @@ class ProfileRepositoryImpl @Inject constructor(
 
     override suspend fun sendFcmToken(token: String): Result<String> {
         return try {
-            val request = FcmTokenRequest(fcmToken = token)
+            val request = FcmTokenRequestDto(token = token)
             val response = api.sendFcmToken(request)
 
             if (response.isSuccessful && response.body() != null) {

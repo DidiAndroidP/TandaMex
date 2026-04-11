@@ -45,6 +45,6 @@ class TandaFirebaseService : FirebaseMessagingService() {
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        println("🔥 FCM Token actualizado por Google: $token")
+        println(token)
     }
 }

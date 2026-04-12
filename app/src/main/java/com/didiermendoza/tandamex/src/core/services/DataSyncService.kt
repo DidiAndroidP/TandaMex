@@ -18,12 +18,15 @@ import android.os.IBinder
 import com.didiermendoza.tandamex.src.core.notifications.NotificationFactory
 import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.UpdateProfileUseCase
 import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.UploadProfilePhotoUseCase
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.time.delay
 
 @AndroidEntryPoint
 class DataSyncService : Service() {
     @Inject lateinit var uploadProfilePhotoUseCase: UploadProfilePhotoUseCase
     @Inject lateinit var updateProfileUseCase: UpdateProfileUseCase
     @Inject lateinit var notificationFactory: NotificationFactory
+
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     companion object {
@@ -36,9 +39,13 @@ class DataSyncService : Service() {
         const val EXTRA_PHONE = "extra_phone"
     }
 
+    override fun onCreate() {
+        super.onCreate()
+        createNotificationChannel()
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val action = intent?.action
-        createNotificationChannel()
 
         val message = when (action) {
             ACTION_UPDATE_PROFILE -> "Actualizando datos del usuario..."
@@ -48,24 +55,30 @@ class DataSyncService : Service() {
 
         val notification = notificationFactory.createSyncNotification(message)
 
-        when {
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE -> {
-                startForeground(
-                    NOTIFICATION_ID,
-                    notification,
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-                )
+        try {
+            when {
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE -> {
+                    startForeground(
+                        NOTIFICATION_ID,
+                        notification,
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                    )
+                }
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> {
+                    startForeground(
+                        NOTIFICATION_ID,
+                        notification,
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                    )
+                }
+                else -> {
+                    startForeground(NOTIFICATION_ID, notification)
+                }
             }
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> {
-                startForeground(
-                    NOTIFICATION_ID,
-                    notification,
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-                )
-            }
-            else -> {
-                startForeground(NOTIFICATION_ID, notification)
-            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            stopSelf()
+            return START_NOT_STICKY
         }
 
         when (action) {
@@ -76,7 +89,14 @@ class DataSyncService : Service() {
             }
             ACTION_UPLOAD_PHOTO -> {
                 val filePath = intent?.getStringExtra(EXTRA_FILE_PATH) ?: ""
-                uploadPhotoTask(filePath)
+                android.util.Log.d("DEBUG_TANDA", "Ruta recibida: $filePath")
+
+                if (filePath.isNotEmpty()) {
+                    uploadPhotoTask(filePath)
+                } else {
+                    android.util.Log.e("DEBUG_TANDA", "¡La ruta llegó vacía!")
+                    stopServiceGracefully()
+                }
             }
         }
 
@@ -92,6 +112,7 @@ class DataSyncService : Service() {
 
     private fun uploadPhotoTask(filePath: String) {
         serviceScope.launch {
+            delay(5000)
             uploadProfilePhotoUseCase(filePath)
             stopServiceGracefully()
         }
@@ -111,13 +132,15 @@ class DataSyncService : Service() {
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                "Sincronización de Perfil",
-                NotificationManager.IMPORTANCE_LOW
-            )
             val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            manager.createNotificationChannel(channel)
+            if (manager.getNotificationChannel(CHANNEL_ID) == null) {
+                val channel = NotificationChannel(
+                    CHANNEL_ID,
+                    "Sincronización de Perfil",
+                    NotificationManager.IMPORTANCE_LOW
+                )
+                manager.createNotificationChannel(channel)
+            }
         }
     }
 }

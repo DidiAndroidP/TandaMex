@@ -11,10 +11,12 @@ class NotificationFactory @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     fun createSyncNotification(contentText: String): Notification {
-        return NotificationCompat.Builder(context, "sync_channel")
+        val channelId = "profile_sync_channel"
+
+        return NotificationCompat.Builder(context, channelId)
             .setContentTitle("Sincronizando Perfil")
             .setContentText(contentText)
-            .setSmallIcon(R.drawable.ic_launcher_background)
+            .setSmallIcon(android.R.drawable.stat_sys_upload)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
             .build()

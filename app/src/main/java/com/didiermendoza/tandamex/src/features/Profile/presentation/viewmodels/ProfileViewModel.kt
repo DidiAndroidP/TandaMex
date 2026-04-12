@@ -150,8 +150,8 @@ class ProfileViewModel @Inject constructor(
 
     private fun uploadPhotoViaService(filePath: String) {
         val intent = Intent(context, DataSyncService::class.java).apply {
-            action = "ACTION_UPLOAD_PHOTO"
-            putExtra("EXTRA_FILE_PATH", filePath)
+            action = DataSyncService.ACTION_UPLOAD_PHOTO
+            putExtra(DataSyncService.EXTRA_FILE_PATH, filePath)
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

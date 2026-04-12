@@ -18,7 +18,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Savings
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,7 +44,8 @@ fun HomeScreen(
     onNavigateToDetail: (Int) -> Unit,
     onNavigateToProfile: () -> Unit
 ) {
-    val tandas by viewModel.tandas.collectAsStateWithLifecycle()
+    val myTandas by viewModel.myTandas.collectAsStateWithLifecycle()
+    val availableTandas by viewModel.availableTandas.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val userName by viewModel.userName.collectAsStateWithLifecycle()
@@ -153,32 +153,75 @@ fun HomeScreen(
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             Text(text = error ?: "Error desconocido", color = MaterialTheme.colorScheme.error)
                         }
-                    } else if (tandas.isEmpty()) {
+                    } else if (myTandas.isEmpty() && availableTandas.isEmpty()) {
                         EmptyState()
                     } else {
                         LazyColumn(
                             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            items(tandas) { tanda ->
-                                AnimatedVisibility(
-                                    visible = true,
-                                    enter = slideInVertically(initialOffsetY = { it / 2 }) + fadeIn()
-                                ) {
-                                    TandaItemCard(
-                                        title = tanda.name,
-                                        amount = currencyFormatter.format(tanda.amount),
-                                        periodicity = when (tanda.frequency) {
-                                            "weekly" -> "Semanal"
-                                            "biweekly" -> "Quincenal"
-                                            "monthly" -> "Mensual"
-                                            else -> tanda.frequency
-                                        },
-                                        progress = tanda.progress,
-                                        membersCount = tanda.totalMembers,
-                                        status = tanda.status,
-                                        onClick = { onNavigateToDetail(tanda.id) }
+                            if (myTandas.isNotEmpty()) {
+                                item {
+                                    Text(
+                                        text = "Tus ahorros al día",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(bottom = 8.dp)
                                     )
+                                }
+                                items(myTandas) { tanda ->
+                                    AnimatedVisibility(
+                                        visible = true,
+                                        enter = slideInVertically(initialOffsetY = { it / 2 }) + fadeIn()
+                                    ) {
+                                        TandaItemCard(
+                                            title = tanda.name,
+                                            amount = currencyFormatter.format(tanda.amount),
+                                            periodicity = when (tanda.frequency) {
+                                                "weekly" -> "Semanal"
+                                                "biweekly" -> "Quincenal"
+                                                "monthly" -> "Mensual"
+                                                else -> tanda.frequency
+                                            },
+                                            progress = tanda.progress,
+                                            membersCount = tanda.totalMembers,
+                                            status = tanda.status,
+                                            onClick = { onNavigateToDetail(tanda.id) }
+                                        )
+                                    }
+                                }
+                            }
+
+                            if (availableTandas.isNotEmpty()) {
+                                item {
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Text(
+                                        text = "Explorar Tandas",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(bottom = 8.dp)
+                                    )
+                                }
+                                items(availableTandas) { tanda ->
+                                    AnimatedVisibility(
+                                        visible = true,
+                                        enter = slideInVertically(initialOffsetY = { it / 2 }) + fadeIn()
+                                    ) {
+                                        TandaItemCard(
+                                            title = tanda.name,
+                                            amount = currencyFormatter.format(tanda.amount),
+                                            periodicity = when (tanda.frequency) {
+                                                "weekly" -> "Semanal"
+                                                "biweekly" -> "Quincenal"
+                                                "monthly" -> "Mensual"
+                                                else -> tanda.frequency
+                                            },
+                                            progress = tanda.progress,
+                                            membersCount = tanda.totalMembers,
+                                            status = tanda.status,
+                                            onClick = { onNavigateToDetail(tanda.id) }
+                                        )
+                                    }
                                 }
                             }
                             item { Spacer(modifier = Modifier.height(80.dp)) }
@@ -219,7 +262,7 @@ fun HomeHeader(userName: String, userPhoto: String?, onProfileClick: () -> Unit)
                     color = MaterialTheme.colorScheme.onBackground
                 )
                 Text(
-                    text = "Tus ahorros al día",
+                    text = "Tu resumen general",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.secondary
                 )

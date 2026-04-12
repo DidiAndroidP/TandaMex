@@ -6,6 +6,7 @@ import com.didiermendoza.tandamex.src.features.Home.domain.entities.Tanda
 import com.didiermendoza.tandamex.src.features.Home.domain.usecases.CheckWalletExistsUseCase
 import com.didiermendoza.tandamex.src.features.wallet.domain.usecases.CreateDefaultWalletUseCase
 import com.didiermendoza.tandamex.src.features.Home.domain.usecases.GetAvailableTandasUseCase
+import com.didiermendoza.tandamex.src.features.Home.domain.usecases.GetMyTandasUseCase
 import com.didiermendoza.tandamex.src.features.Home.domain.usecases.SyncTandasUseCase
 import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.GetMyProfileUseCase
 import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.SendFcmTokenUseCase
@@ -21,6 +22,7 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val getAvailableTandasUseCase: GetAvailableTandasUseCase,
+    private val getMyTandasUseCase: GetMyTandasUseCase,
     private val syncTandasUseCase: SyncTandasUseCase,
     private val getMyProfileUseCase: GetMyProfileUseCase,
     private val checkWalletExistsUseCase: CheckWalletExistsUseCase,
@@ -28,8 +30,11 @@ class HomeViewModel @Inject constructor(
     private val sendFcmTokenUseCase: SendFcmTokenUseCase
 ) : ViewModel() {
 
-    private val _tandas = MutableStateFlow<List<Tanda>>(emptyList())
-    val tandas = _tandas.asStateFlow()
+    private val _availableTandas = MutableStateFlow<List<Tanda>>(emptyList())
+    val availableTandas = _availableTandas.asStateFlow()
+
+    private val _myTandas = MutableStateFlow<List<Tanda>>(emptyList())
+    val myTandas = _myTandas.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
@@ -60,7 +65,7 @@ class HomeViewModel @Inject constructor(
 
     private fun observeTandas() {
         getAvailableTandasUseCase().onEach { list ->
-            _tandas.value = list
+            _availableTandas.value = list
             if (list.isNotEmpty()) {
                 _isLoading.value = false
             }
@@ -79,7 +84,6 @@ class HomeViewModel @Inject constructor(
                     _userPhoto.value = user.photo
 
                     checkUserWallet(user.id)
-
                     registerDeviceToken()
                 },
                 onFailure = {
@@ -92,10 +96,20 @@ class HomeViewModel @Inject constructor(
             try {
                 syncTandasUseCase()
             } catch (e: Exception) {
-                _error.value = "Error de conexión: Mostrando datos guardados."
-            } finally {
-                _isLoading.value = false
+                println("Error syncTandas: ${e.message}")
             }
+        }
+
+        viewModelScope.launch {
+            getMyTandasUseCase().fold(
+                onSuccess = { miLista ->
+                    _myTandas.value = miLista
+                },
+                onFailure = { error ->
+                    _error.value = "Error Mis Tandas: ${error.message}"
+                }
+            )
+            _isLoading.value = false
         }
     }
 
@@ -147,14 +161,8 @@ class HomeViewModel @Inject constructor(
         _isRefreshing.value = true
         _error.value = null
 
-        viewModelScope.launch {
-            try {
-                syncTandasUseCase()
-            } catch (e: Exception) {
-                _error.value = "Error al recargar."
-            } finally {
-                _isRefreshing.value = false
-            }
-        }
+        loadData()
+
+        _isRefreshing.value = false
     }
 }

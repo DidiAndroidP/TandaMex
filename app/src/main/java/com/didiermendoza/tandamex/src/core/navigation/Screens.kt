@@ -16,3 +16,6 @@ object ProfileRoute
 
 @Serializable
 object WalletRoute
+
+@Serializable
+data class TandaDetailRoute(val tandaId: Int)

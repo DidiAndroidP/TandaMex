@@ -1,11 +1,15 @@
 package com.didiermendoza.tandamex.src.features.Profile.data.repositories
 
+import com.didiermendoza.tandamex.src.core.status.UploadStatus
 import com.didiermendoza.tandamex.src.features.Profile.data.datasource.remote.api.ProfileApiService
 import com.didiermendoza.tandamex.src.features.Profile.data.datasources.remote.model.FcmTokenRequestDto
 import com.didiermendoza.tandamex.src.features.Profile.data.datasource.remote.mapper.toDomain
 import com.didiermendoza.tandamex.src.features.Profile.data.datasource.remote.model.UpdateProfileRequestDto
 import com.didiermendoza.tandamex.src.features.Profile.domain.entities.User
 import com.didiermendoza.tandamex.src.features.Profile.domain.repositories.ProfileRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
@@ -15,6 +19,8 @@ import java.io.File
 class ProfileRepositoryImpl @Inject constructor(
     private val api: ProfileApiService
 ) : ProfileRepository {
+    private val _uploadStatus = MutableStateFlow<UploadStatus>(UploadStatus.Idle)
+    override val uploadStatus: Flow<UploadStatus> = _uploadStatus.asStateFlow()
 
     override suspend fun getMyProfile(): Result<User> {
         return try {
@@ -45,6 +51,14 @@ class ProfileRepositoryImpl @Inject constructor(
     }
 
     override suspend fun uploadProfilePhoto(photoFile: File): Result<String> {
+        _uploadStatus.value = UploadStatus.Loading
+
+        if (!photoFile.exists()) {
+            val errorMsg = "Archivo no encontrado en: ${photoFile.absolutePath}"
+            _uploadStatus.value = UploadStatus.Error(errorMsg)
+            return Result.failure(Exception(errorMsg))
+        }
+
         return try {
             val requestFile = photoFile.asRequestBody("image/jpeg".toMediaTypeOrNull())
             val body = MultipartBody.Part.createFormData("photo", photoFile.name, requestFile)
@@ -52,11 +66,16 @@ class ProfileRepositoryImpl @Inject constructor(
             val response = api.uploadProfilePhoto(body)
 
             if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!.message)
+                val msg = response.body()!!.message
+                _uploadStatus.value = UploadStatus.Success(msg)
+                Result.success(msg)
             } else {
-                Result.failure(Exception("Error al subir foto: ${response.code()}"))
+                val errorMsg = "Error del servidor: ${response.code()} - ${response.errorBody()?.string()}"
+                _uploadStatus.value = UploadStatus.Error(errorMsg)
+                Result.failure(Exception(errorMsg))
             }
         } catch (e: Exception) {
+            _uploadStatus.value = UploadStatus.Error(e.message ?: "Error de red")
             Result.failure(e)
         }
     }

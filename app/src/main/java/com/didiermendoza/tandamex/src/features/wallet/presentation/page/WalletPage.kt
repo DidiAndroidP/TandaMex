@@ -115,7 +115,6 @@ fun WalletScreen(
                     }
                 }
             } else {
-                // --- VISTA NORMAL CUANDO SÍ TIENE BILLETERA ---
                 Column(
                     modifier = Modifier
                         .fillMaxSize()

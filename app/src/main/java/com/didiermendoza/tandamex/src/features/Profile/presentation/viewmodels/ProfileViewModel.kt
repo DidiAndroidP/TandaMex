@@ -1,15 +1,21 @@
 package com.didiermendoza.tandamex.src.features.Profile.presentation.viewmodels
 
+import android.content.Context
+import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.didiermendoza.tandamex.src.core.hardware.domain.VibrationManager
+import com.didiermendoza.tandamex.src.core.services.DataSyncService
+import com.didiermendoza.tandamex.src.core.status.UploadStatus
 import com.didiermendoza.tandamex.src.features.Profile.domain.entities.User
 import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.GetMyProfileUseCase
+import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.ObserveUploadStatusUseCase
 import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.UpdateProfileUseCase
 import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.TakeProfilePhotoUseCase
-import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.UploadProfilePhotoUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -20,8 +26,9 @@ class ProfileViewModel @Inject constructor(
     private val getMyProfileUseCase: GetMyProfileUseCase,
     private val updateProfileUseCase: UpdateProfileUseCase,
     private val takeProfilePhotoUseCase: TakeProfilePhotoUseCase,
-    private val uploadProfilePhotoUseCase: UploadProfilePhotoUseCase,
-    private val vibrationManager: VibrationManager
+    private val vibrationManager: VibrationManager,
+    private val observeUploadStatusUseCase: ObserveUploadStatusUseCase,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _user = MutableStateFlow<User?>(null)
@@ -44,6 +51,7 @@ class ProfileViewModel @Inject constructor(
 
     init {
         loadUserProfile()
+        observePhotoUpload()
     }
 
     fun loadUserProfile() {
@@ -60,6 +68,26 @@ class ProfileViewModel @Inject constructor(
                     _isLoading.value = false
                 }
             )
+        }
+    }
+
+    private fun observePhotoUpload() {
+        viewModelScope.launch {
+            observeUploadStatusUseCase().collect { status ->
+                when(status) {
+                    is UploadStatus.Loading -> _isLoading.value = true
+                    is UploadStatus.Success -> {
+                        _isLoading.value = false
+                        _successMessage.value = status.message
+                        loadUserProfile()
+                    }
+                    is UploadStatus.Error -> {
+                        _isLoading.value = false
+                        _error.value = status.message
+                    }
+                    is UploadStatus.Idle -> {}
+                }
+            }
         }
     }
 
@@ -106,7 +134,7 @@ class ProfileViewModel @Inject constructor(
                     _profilePhotoUri.value = uri
                     vibrationManager.vibrate(100)
                     uri.path?.let { path ->
-                        uploadPhotoToServer(path)
+                        uploadPhotoViaService(path)
                     } ?: run {
                         _isLoading.value = false
                     }
@@ -120,19 +148,16 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    private suspend fun uploadPhotoToServer(filePath: String) {
-        uploadProfilePhotoUseCase(filePath).fold(
-            onSuccess = { msg ->
-                _isLoading.value = false
-                _successMessage.value = "Foto actualizada correctamente"
-                vibrationManager.vibrate(200)
-                loadUserProfile()
-            },
-            onFailure = { err ->
-                _isLoading.value = false
-                _error.value = "Error al subir la foto: ${err.message}"
-                vibrationManager.vibrateError()
-            }
-        )
+    private fun uploadPhotoViaService(filePath: String) {
+        val intent = Intent(context, DataSyncService::class.java).apply {
+            action = DataSyncService.ACTION_UPLOAD_PHOTO
+            putExtra(DataSyncService.EXTRA_FILE_PATH, filePath)
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(intent)
+        } else {
+            context.startService(intent)
+        }
     }
 }

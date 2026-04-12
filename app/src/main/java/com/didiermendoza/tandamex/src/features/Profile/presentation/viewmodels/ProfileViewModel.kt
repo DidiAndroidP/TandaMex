@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.didiermendoza.tandamex.src.core.hardware.domain.VibrationManager
@@ -15,7 +14,6 @@ import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.GetMyProf
 import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.ObserveUploadStatusUseCase
 import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.UpdateProfileUseCase
 import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.TakeProfilePhotoUseCase
-import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.UploadProfilePhotoUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow

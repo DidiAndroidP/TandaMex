@@ -21,8 +21,6 @@ import com.didiermendoza.tandamex.src.features.Profile.presentation.viewmodels.P
 @Composable
 fun ProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel(),
-    onNavigateToWallet: () -> Unit,
-    onBackClick: () -> Unit,
     onLogoutClick: () -> Unit
 ) {
     val user by viewModel.user.collectAsStateWithLifecycle()
@@ -114,7 +112,6 @@ fun ProfileScreen(
 
                 if (!isEditing) {
                     ProfileSettingsMenu(
-                        onWalletClick = onNavigateToWallet,
                         onEditClick = { viewModel.toggleEditMode() },
                         onLogoutClick = onLogoutClick
                     )

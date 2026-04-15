@@ -51,31 +51,21 @@ class ProfileRepositoryImpl @Inject constructor(
     }
 
     override suspend fun uploadProfilePhoto(photoFile: File): Result<String> {
-        _uploadStatus.value = UploadStatus.Loading
-
         if (!photoFile.exists()) {
-            val errorMsg = "Archivo no encontrado en: ${photoFile.absolutePath}"
-            _uploadStatus.value = UploadStatus.Error(errorMsg)
-            return Result.failure(Exception(errorMsg))
+            return Result.failure(Exception("Archivo no encontrado"))
         }
 
         return try {
             val requestFile = photoFile.asRequestBody("image/jpeg".toMediaTypeOrNull())
             val body = MultipartBody.Part.createFormData("photo", photoFile.name, requestFile)
-
             val response = api.uploadProfilePhoto(body)
 
             if (response.isSuccessful && response.body() != null) {
-                val msg = response.body()!!.message
-                _uploadStatus.value = UploadStatus.Success(msg)
-                Result.success(msg)
+                Result.success(response.body()!!.message)
             } else {
-                val errorMsg = "Error del servidor: ${response.code()} - ${response.errorBody()?.string()}"
-                _uploadStatus.value = UploadStatus.Error(errorMsg)
-                Result.failure(Exception(errorMsg))
+                Result.failure(Exception("Error del servidor: ${response.code()}"))
             }
         } catch (e: Exception) {
-            _uploadStatus.value = UploadStatus.Error(e.message ?: "Error de red")
             Result.failure(e)
         }
     }

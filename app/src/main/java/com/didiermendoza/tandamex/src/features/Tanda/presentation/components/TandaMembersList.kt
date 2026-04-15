@@ -17,7 +17,7 @@ import com.didiermendoza.tandamex.src.features.Tanda.domain.entities.TandaMember
 fun TandaMembersList(
     members: List<TandaMember>,
     creatorId: Int,
-    tandaStatus: String, // 👇 NUEVO: Recibimos el estado de la tanda
+    tandaStatus: String,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {

@@ -141,11 +141,10 @@ class TandaViewModel @Inject constructor(
 
     fun leaveTanda() {
         val tandaInfo = _tanda.value ?: return
-        val userId = _currentUserId.value ?: return
 
         _isLoading.value = true
         viewModelScope.launch {
-            leaveTandaUseCase(tandaInfo.id, userId, tandaInfo.contributionAmount).fold(
+            leaveTandaUseCase(tandaInfo.id).fold(
                 onSuccess = { msg ->
                     _message.value = msg
                     vibrationManager.vibrate(150)

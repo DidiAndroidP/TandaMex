@@ -54,7 +54,7 @@
         </service>
 
         <service
-            android:name=".src.core.services.DataSyncService"
+            android:name=".src.core.workers.WorkManagerProfileSyncImpl"
             android:foregroundServiceType="dataSync"
             android:enabled="true"
             android:exported="false"/>

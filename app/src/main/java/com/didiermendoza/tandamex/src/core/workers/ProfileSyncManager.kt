@@ -7,3 +7,5 @@ interface ProfileSyncManager {
     fun enqueuePhotoUpload(filePath: String)
     fun observeUploadState(): Flow<UploadStatus>
 }
+
+//jj

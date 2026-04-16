@@ -29,8 +29,11 @@ class HomeViewModel @Inject constructor(
     private val _availableTandas = MutableStateFlow<List<Tanda>>(emptyList())
     val availableTandas = _availableTandas.asStateFlow()
 
-    private val _myTandas = MutableStateFlow<List<Tanda>>(emptyList())
-    val myTandas = _myTandas.asStateFlow()
+    private val _activeTandas = MutableStateFlow<List<Tanda>>(emptyList())
+    val activeTandas = _activeTandas.asStateFlow()
+
+    private val _historyTandas = MutableStateFlow<List<Tanda>>(emptyList())
+    val historyTandas = _historyTandas.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
@@ -94,7 +97,9 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             getMyTandasUseCase().fold(
                 onSuccess = { miLista ->
-                    _myTandas.value = miLista
+                    val (history, active) = miLista.partition { it.status.equals("finished", ignoreCase = true) }
+                    _historyTandas.value = history
+                    _activeTandas.value = active
                 },
                 onFailure = { error ->
                     _error.value = "Error Mis Tandas: ${error.message}"

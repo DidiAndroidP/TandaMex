@@ -1,17 +1,22 @@
 package com.didiermendoza.tandamex.src.features.Profile.presentation.viewmodels
 
+import android.content.Context
+import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.didiermendoza.tandamex.src.core.hardware.domain.VibrationManager
+import com.didiermendoza.tandamex.src.core.services.DataSyncService
 import com.didiermendoza.tandamex.src.core.status.UploadStatus
 import com.didiermendoza.tandamex.src.features.Profile.domain.entities.User
 import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.GetMyProfileUseCase
 import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.ObserveUploadStatusUseCase
-import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.SchedulePhotoUploadUseCase
 import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.UpdateProfileUseCase
 import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.TakeProfilePhotoUseCase
+import com.didiermendoza.tandamex.src.features.Tanda.domain.repositories.ReviewRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -24,18 +29,28 @@ class ProfileViewModel @Inject constructor(
     private val takeProfilePhotoUseCase: TakeProfilePhotoUseCase,
     private val vibrationManager: VibrationManager,
     private val observeUploadStatusUseCase: ObserveUploadStatusUseCase,
-    private val schedulePhotoUploadUseCase: SchedulePhotoUploadUseCase
+    private val reviewRepository: ReviewRepository,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
+
     private val _user = MutableStateFlow<User?>(null)
     val user = _user.asStateFlow()
+
+    private val _reputation = MutableStateFlow(0f)
+    val reputation = _reputation.asStateFlow()
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
+
     private val _error = MutableStateFlow<String?>(null)
     val error = _error.asStateFlow()
+
     private val _isEditing = MutableStateFlow(false)
     val isEditing = _isEditing.asStateFlow()
+
     private val _successMessage = MutableStateFlow<String?>(null)
     val successMessage = _successMessage.asStateFlow()
+
     private val _profilePhotoUri = MutableStateFlow<Uri?>(null)
     val profilePhotoUri = _profilePhotoUri.asStateFlow()
 
@@ -49,13 +64,28 @@ class ProfileViewModel @Inject constructor(
         _error.value = null
         viewModelScope.launch {
             getMyProfileUseCase().fold(
-                onSuccess = {
-                    _user.value = it
+                onSuccess = { currentUser ->
+                    _user.value = currentUser
                     _isLoading.value = false
+
+                    loadReputation(currentUser.id)
                 },
                 onFailure = {
                     _error.value = it.message
                     _isLoading.value = false
+                }
+            )
+        }
+    }
+
+    private fun loadReputation(userId: Int) {
+        viewModelScope.launch {
+            reviewRepository.getCreatorReputation(userId).fold(
+                onSuccess = { rep ->
+                    _reputation.value = rep.toFloat()
+                },
+                onFailure = {
+                    _reputation.value = 0f
                 }
             )
         }
@@ -124,7 +154,7 @@ class ProfileViewModel @Inject constructor(
                     _profilePhotoUri.value = uri
                     vibrationManager.vibrate(100)
                     uri.path?.let { path ->
-                        schedulePhotoUploadUseCase(path)
+                        uploadPhotoViaService(path)
                     } ?: run {
                         _isLoading.value = false
                     }
@@ -135,6 +165,19 @@ class ProfileViewModel @Inject constructor(
                     vibrationManager.vibrateError()
                 }
             )
+        }
+    }
+
+    private fun uploadPhotoViaService(filePath: String) {
+        val intent = Intent(context, DataSyncService::class.java).apply {
+            action = DataSyncService.ACTION_UPLOAD_PHOTO
+            putExtra(DataSyncService.EXTRA_FILE_PATH, filePath)
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(intent)
+        } else {
+            context.startService(intent)
         }
     }
 }

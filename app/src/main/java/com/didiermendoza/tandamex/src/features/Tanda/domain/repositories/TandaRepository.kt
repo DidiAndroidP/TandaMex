@@ -20,6 +20,6 @@ interface TandaRepository {
     suspend fun deleteTanda(tandaId: Int): Result<String>
     suspend fun getTandaSummary(tandaId: Int): Result<TandaSummary>
     suspend fun createPaymentSession(tandaId: Int, period: Int, amount: Double): Result<String>
-
     suspend fun syncMyTandas(): Result<List<com.didiermendoza.tandamex.src.features.Home.domain.entities.Tanda>>
+    suspend fun triggerLiveSchedule(tandaId: Int): Result<Unit>
 }

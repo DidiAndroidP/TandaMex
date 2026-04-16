@@ -1,6 +1,7 @@
 package com.didiermendoza.tandamex.src.core.di
 
 import com.didiermendoza.tandamex.BuildConfig
+import com.didiermendoza.tandamex.core.network.SocketManager
 import com.didiermendoza.tandamex.src.core.storage.AuthInterceptor
 import com.didiermendoza.tandamex.src.features.Home.data.datasource.remote.api.HomeApiService
 import com.didiermendoza.tandamex.src.features.Login.data.datasource.remote.api.LoginApiService
@@ -66,5 +67,11 @@ object NetworkModule {
     @Singleton
     fun provideHomeApi(retrofit: Retrofit): HomeApiService {
         return retrofit.create(HomeApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideSocketManager(): SocketManager {
+        return SocketManager()
     }
 }

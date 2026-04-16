@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.didiermendoza.tandamex.src.features.Tanda.domain.entities.TandaMember
+import com.didiermendoza.tandamex.src.features.Profile.presentation.components.ReputationStars
 
 @Composable
 fun TandaMembersList(
@@ -47,7 +48,7 @@ fun TandaMembersList(
                         MemberItem(
                             member = member,
                             isOwner = member.id == creatorId,
-                            tandaStatus = tandaStatus // Pasamos el estado al item
+                            tandaStatus = tandaStatus
                         )
                         if (index < members.size - 1) {
                             HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant, thickness = 0.5.dp)
@@ -83,13 +84,22 @@ fun MemberItem(member: TandaMember, isOwner: Boolean, tandaStatus: String) {
             }
         },
         supportingContent = {
-            if (tandaStatus == "CREATED") {
-                Text("Esperando inicio", color = MaterialTheme.colorScheme.outline)
-            } else {
-                Text(
-                    text = if (member.hasPaid) "Al corriente" else "Pendiente de pago",
-                    color = if (member.hasPaid) Color(0xFF2E7D32) else MaterialTheme.colorScheme.error
+            Column {
+                ReputationStars(
+                    reputation = 4.5f,
+                    starSize = 14.dp,
+                    showText = true,
+                    modifier = Modifier.padding(top = 2.dp, bottom = 4.dp)
                 )
+
+                if (tandaStatus == "CREATED") {
+                    Text("Esperando inicio", color = MaterialTheme.colorScheme.outline)
+                } else {
+                    Text(
+                        text = if (member.hasPaid) "Al corriente" else "Pendiente de pago",
+                        color = if (member.hasPaid) Color(0xFF2E7D32) else MaterialTheme.colorScheme.error
+                    )
+                }
             }
         },
         leadingContent = {

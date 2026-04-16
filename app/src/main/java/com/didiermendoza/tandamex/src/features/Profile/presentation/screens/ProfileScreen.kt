@@ -24,6 +24,7 @@ fun ProfileScreen(
     onLogoutClick: () -> Unit
 ) {
     val user by viewModel.user.collectAsStateWithLifecycle()
+    val reputation by viewModel.reputation.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val isEditing by viewModel.isEditing.collectAsStateWithLifecycle()
@@ -82,15 +83,25 @@ fun ProfileScreen(
                     onCancelClick = { viewModel.toggleEditMode() },
                     onSaveClick = { viewModel.saveProfile(nameInput, phoneInput) }
                 ) {
-                    ProfileAvatar(
-                        initials = user?.initials ?: "?",
-                        photoUri = profilePhotoUri,
-                        photoUrl = user?.photo,
-                        isEditing = isEditing,
-                        onCameraClick = {
-                            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        ProfileAvatar(
+                            initials = user?.initials ?: "?",
+                            photoUri = profilePhotoUri,
+                            photoUrl = user?.photo,
+                            isEditing = isEditing,
+                            onCameraClick = {
+                                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                            }
+                        )
+
+                        if (!isEditing) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            ReputationStars(
+                                reputation = reputation,
+                                starSize = 24.dp
+                            )
                         }
-                    )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(60.dp))

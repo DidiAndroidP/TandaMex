@@ -14,6 +14,7 @@ import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.GetMyProf
 import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.ObserveUploadStatusUseCase
 import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.UpdateProfileUseCase
 import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.TakeProfilePhotoUseCase
+import com.didiermendoza.tandamex.src.features.Tanda.domain.repositories.ReviewRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,11 +29,15 @@ class ProfileViewModel @Inject constructor(
     private val takeProfilePhotoUseCase: TakeProfilePhotoUseCase,
     private val vibrationManager: VibrationManager,
     private val observeUploadStatusUseCase: ObserveUploadStatusUseCase,
+    private val reviewRepository: ReviewRepository,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _user = MutableStateFlow<User?>(null)
     val user = _user.asStateFlow()
+
+    private val _reputation = MutableStateFlow(0f)
+    val reputation = _reputation.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
@@ -59,13 +64,28 @@ class ProfileViewModel @Inject constructor(
         _error.value = null
         viewModelScope.launch {
             getMyProfileUseCase().fold(
-                onSuccess = {
-                    _user.value = it
+                onSuccess = { currentUser ->
+                    _user.value = currentUser
                     _isLoading.value = false
+
+                    loadReputation(currentUser.id)
                 },
                 onFailure = {
                     _error.value = it.message
                     _isLoading.value = false
+                }
+            )
+        }
+    }
+
+    private fun loadReputation(userId: Int) {
+        viewModelScope.launch {
+            reviewRepository.getCreatorReputation(userId).fold(
+                onSuccess = { rep ->
+                    _reputation.value = rep.toFloat()
+                },
+                onFailure = {
+                    _reputation.value = 0f
                 }
             )
         }

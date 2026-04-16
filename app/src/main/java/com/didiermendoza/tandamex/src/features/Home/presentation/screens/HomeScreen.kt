@@ -15,7 +15,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Savings
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
@@ -24,12 +26,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.didiermendoza.tandamex.src.features.Home.domain.entities.Tanda
 import com.didiermendoza.tandamex.src.features.Home.presentation.components.TandaItemCard
 import com.didiermendoza.tandamex.src.features.Home.presentation.viewmodels.HomeViewModel
 import kotlinx.coroutines.launch
@@ -44,7 +48,8 @@ fun HomeScreen(
     onNavigateToDetail: (Int) -> Unit,
     onNavigateToProfile: () -> Unit
 ) {
-    val myTandas by viewModel.myTandas.collectAsStateWithLifecycle()
+    val activeTandas by viewModel.activeTandas.collectAsStateWithLifecycle()
+    val historyTandas by viewModel.historyTandas.collectAsStateWithLifecycle()
     val availableTandas by viewModel.availableTandas.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
@@ -59,6 +64,9 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
 
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+
+    var selectedTabIndex by remember { mutableIntStateOf(0) }
+    val tabTitles = listOf("Mis Tandas", "Disponibles", "Historial")
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -141,9 +149,30 @@ fun HomeScreen(
                     onProfileClick = onNavigateToProfile
                 )
 
+                TabRow(
+                    selectedTabIndex = selectedTabIndex,
+                    containerColor = MaterialTheme.colorScheme.background,
+                    contentColor = MaterialTheme.colorScheme.primary,
+                    divider = {}
+                ) {
+                    tabTitles.forEachIndexed { index, title ->
+                        Tab(
+                            selected = selectedTabIndex == index,
+                            onClick = { selectedTabIndex = index },
+                            text = {
+                                Text(
+                                    text = title,
+                                    fontWeight = if (selectedTabIndex == index) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (selectedTabIndex == index) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        )
+                    }
+                }
+
                 Crossfade(targetState = isLoading, label = "HomeState") { loading ->
                     if (loading) {
-                        Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+                        Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) {
                             repeat(3) {
                                 SkeletonCard()
                                 Spacer(modifier = Modifier.height(12.dp))
@@ -153,78 +182,29 @@ fun HomeScreen(
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             Text(text = error ?: "Error desconocido", color = MaterialTheme.colorScheme.error)
                         }
-                    } else if (myTandas.isEmpty() && availableTandas.isEmpty()) {
-                        EmptyState()
                     } else {
-                        LazyColumn(
-                            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            if (myTandas.isNotEmpty()) {
-                                item {
-                                    Text(
-                                        text = "Tus ahorros al día",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(bottom = 8.dp)
-                                    )
-                                }
-                                items(myTandas) { tanda ->
-                                    AnimatedVisibility(
-                                        visible = true,
-                                        enter = slideInVertically(initialOffsetY = { it / 2 }) + fadeIn()
-                                    ) {
-                                        TandaItemCard(
-                                            title = tanda.name,
-                                            amount = currencyFormatter.format(tanda.amount),
-                                            periodicity = when (tanda.frequency) {
-                                                "weekly" -> "Semanal"
-                                                "biweekly" -> "Quincenal"
-                                                "monthly" -> "Mensual"
-                                                else -> tanda.frequency
-                                            },
-                                            progress = tanda.progress,
-                                            membersCount = tanda.totalMembers,
-                                            status = tanda.status,
-                                            onClick = { onNavigateToDetail(tanda.id) }
-                                        )
-                                    }
-                                }
-                            }
-
-                            if (availableTandas.isNotEmpty()) {
-                                item {
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    Text(
-                                        text = "Explorar Tandas",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(bottom = 8.dp)
-                                    )
-                                }
-                                items(availableTandas) { tanda ->
-                                    AnimatedVisibility(
-                                        visible = true,
-                                        enter = slideInVertically(initialOffsetY = { it / 2 }) + fadeIn()
-                                    ) {
-                                        TandaItemCard(
-                                            title = tanda.name,
-                                            amount = currencyFormatter.format(tanda.amount),
-                                            periodicity = when (tanda.frequency) {
-                                                "weekly" -> "Semanal"
-                                                "biweekly" -> "Quincenal"
-                                                "monthly" -> "Mensual"
-                                                else -> tanda.frequency
-                                            },
-                                            progress = tanda.progress,
-                                            membersCount = tanda.totalMembers,
-                                            status = tanda.status,
-                                            onClick = { onNavigateToDetail(tanda.id) }
-                                        )
-                                    }
-                                }
-                            }
-                            item { Spacer(modifier = Modifier.height(80.dp)) }
+                        when (selectedTabIndex) {
+                            0 -> TandaListContent(
+                                tandas = activeTandas,
+                                currencyFormatter = currencyFormatter,
+                                onNavigateToDetail = onNavigateToDetail,
+                                emptyMessage = "No tienes tandas activas\n¡Crea una nueva para empezar a ahorrar!",
+                                emptyIcon = Icons.Outlined.Savings
+                            )
+                            1 -> TandaListContent(
+                                tandas = availableTandas,
+                                currencyFormatter = currencyFormatter,
+                                onNavigateToDetail = onNavigateToDetail,
+                                emptyMessage = "No hay tandas disponibles para unirse en este momento.",
+                                emptyIcon = Icons.Outlined.Search
+                            )
+                            2 -> TandaListContent(
+                                tandas = historyTandas,
+                                currencyFormatter = currencyFormatter,
+                                onNavigateToDetail = onNavigateToDetail,
+                                emptyMessage = "Aún no tienes historial de tandas terminadas.",
+                                emptyIcon = Icons.Outlined.History
+                            )
                         }
                     }
                 }
@@ -234,11 +214,52 @@ fun HomeScreen(
 }
 
 @Composable
+fun TandaListContent(
+    tandas: List<Tanda>,
+    currencyFormatter: NumberFormat,
+    onNavigateToDetail: (Int) -> Unit,
+    emptyMessage: String,
+    emptyIcon: ImageVector
+) {
+    if (tandas.isEmpty()) {
+        EmptyState(emptyMessage, emptyIcon)
+    } else {
+        LazyColumn(
+            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            items(tandas, key = { it.id }) { tanda ->
+                AnimatedVisibility(
+                    visible = true,
+                    enter = slideInVertically(initialOffsetY = { it / 2 }) + fadeIn()
+                ) {
+                    TandaItemCard(
+                        title = tanda.name,
+                        amount = currencyFormatter.format(tanda.amount),
+                        periodicity = when (tanda.frequency) {
+                            "weekly" -> "Semanal"
+                            "biweekly" -> "Quincenal"
+                            "monthly" -> "Mensual"
+                            else -> tanda.frequency
+                        },
+                        progress = tanda.progress,
+                        membersCount = tanda.totalMembers,
+                        status = tanda.status,
+                        onClick = { onNavigateToDetail(tanda.id) }
+                    )
+                }
+            }
+            item { Spacer(modifier = Modifier.height(80.dp)) }
+        }
+    }
+}
+
+@Composable
 fun HomeHeader(userName: String, userPhoto: String?, onProfileClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 16.dp)
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
@@ -326,30 +347,26 @@ fun SkeletonCard() {
 }
 
 @Composable
-fun EmptyState() {
+fun EmptyState(message: String, icon: ImageVector) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 60.dp),
+            .padding(top = 60.dp, start = 20.dp, end = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(
-            imageVector = Icons.Outlined.Savings,
+            imageVector = icon,
             contentDescription = null,
             modifier = Modifier.size(100.dp),
             tint = MaterialTheme.colorScheme.surfaceVariant
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "No tienes tandas activas",
+            text = message,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.secondary
-        )
-        Text(
-            text = "¡Crea una nueva para empezar a ahorrar!",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.outline
+            color = MaterialTheme.colorScheme.secondary,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
     }
 }

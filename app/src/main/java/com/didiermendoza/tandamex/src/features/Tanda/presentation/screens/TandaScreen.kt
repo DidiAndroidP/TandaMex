@@ -13,6 +13,9 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.didiermendoza.tandamex.presentation.tanda_detail.LiveSorteoState
+import com.didiermendoza.tandamex.presentation.tanda_detail.LiveSorteoViewModel
+import com.didiermendoza.tandamex.src.features.Tanda.presentation.components.RouletteDialog
 import com.didiermendoza.tandamex.src.features.Tanda.presentation.components.TandaActionButtons
 import com.didiermendoza.tandamex.src.features.Tanda.presentation.components.TandaDetailInfo
 import com.didiermendoza.tandamex.src.features.Tanda.presentation.components.TandaMembersList
@@ -25,6 +28,7 @@ import java.util.Locale
 @Composable
 fun TandaScreen(
     viewModel: TandaViewModel = hiltViewModel(),
+    liveSorteoViewModel: LiveSorteoViewModel = hiltViewModel(),
     onBackClick: () -> Unit
 ) {
     val tanda by viewModel.tanda.collectAsStateWithLifecycle()
@@ -37,9 +41,17 @@ fun TandaScreen(
     val accumulatedAmount by viewModel.accumulatedAmount.collectAsStateWithLifecycle()
     val stripeUrl by viewModel.stripeUrl.collectAsStateWithLifecycle()
 
+    val sorteoState by liveSorteoViewModel.liveSorteoState.collectAsStateWithLifecycle()
+
     val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.US)
     val snackbarHostState = remember { SnackbarHostState() }
     val uriHandler = LocalUriHandler.current
+
+    LaunchedEffect(tanda?.id) {
+        tanda?.id?.let {
+            liveSorteoViewModel.joinLiveRoom(it)
+        }
+    }
 
     LaunchedEffect(stripeUrl) {
         stripeUrl?.let { url ->
@@ -61,6 +73,17 @@ fun TandaScreen(
         }
     }
 
+    if (sorteoState !is LiveSorteoState.Idle) {
+        val participantNames = members.map { it.name }
+        RouletteDialog(
+            state = sorteoState,
+            participantNames = participantNames,
+            onDismiss = {
+                liveSorteoViewModel.dismissSorteo()
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -76,7 +99,6 @@ fun TandaScreen(
         bottomBar = {
             if (tanda != null) {
                 val displayMembersCount = if (members.isNotEmpty()) members.size else tanda!!.currentMembers
-
                 val isTandaFull = members.isNotEmpty() && displayMembersCount == tanda!!.totalMembers
                 val hasCurrentUserPaid = members.find { it.id == currentUserId }?.hasPaid == true
 
@@ -92,7 +114,11 @@ fun TandaScreen(
                         hasCurrentUserPaid = hasCurrentUserPaid,
                         onJoin = { viewModel.joinTanda() },
                         onLeave = { viewModel.leaveTanda() },
-                        onStart = { viewModel.startTanda() },
+                        onStart = {
+                            tanda?.id?.let { id ->
+                                liveSorteoViewModel.startLiveSorteo(id)
+                            }
+                        },
                         onFinish = { viewModel.finishTanda() },
                         onDelete = { viewModel.deleteTanda() },
                         onPay = { viewModel.payMyContribution() }

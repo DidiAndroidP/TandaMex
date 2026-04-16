@@ -13,10 +13,9 @@ import com.didiermendoza.tandamex.src.core.database.entities.*
         TandaMemberEntity::class,
         ScheduleSummaryEntity::class,
         TurnoEntity::class,
-        WalletEntity::class,
         TandaPaymentEntity::class
     ],
-    version = 4, // Subimos la versión
+    version = 4,
     exportSchema = false
 )
 abstract class TandaMexDatabase : RoomDatabase() {
@@ -25,6 +24,5 @@ abstract class TandaMexDatabase : RoomDatabase() {
     abstract fun tandaDetailDao(): TandaDetailDao
     abstract fun tandaMemberDao(): TandaMemberDao
     abstract fun scheduleDao(): ScheduleDao
-    abstract fun walletDao(): WalletDao
     abstract fun tandaPaymentDao(): TandaPaymentDao
 }

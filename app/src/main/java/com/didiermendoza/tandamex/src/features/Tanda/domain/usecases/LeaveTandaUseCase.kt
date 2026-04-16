@@ -6,7 +6,7 @@ import javax.inject.Inject
 class LeaveTandaUseCase @Inject constructor(
     private val repository: TandaRepository
 ) {
-    suspend operator fun invoke(tandaId: Int, userId: Int, amountToRefund: Double): Result<String> {
-        return repository.leaveTanda(tandaId, userId, amountToRefund)
+    suspend operator fun invoke(tandaId: Int): Result<String> {
+        return repository.leaveTanda(tandaId)
     }
 }

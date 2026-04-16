@@ -251,4 +251,17 @@ class TandaRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+
+    override suspend fun triggerLiveSchedule(tandaId: Int): Result<Unit> {
+        return try {
+            val response = api.triggerLiveSchedule(tandaId)
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Error al iniciar el sorteo: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

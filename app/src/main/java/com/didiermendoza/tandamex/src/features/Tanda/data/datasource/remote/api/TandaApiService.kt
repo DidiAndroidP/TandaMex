@@ -48,4 +48,14 @@ interface TandaApiService {
 
     @POST("payments/session")
     suspend fun createPaymentSession(@Body request: PaymentSessionRequestDto): Response<PaymentSessionResponseDto>
+
+    @POST("tandas/{id}/live-schedule")
+    suspend fun triggerLiveSchedule(@Path("id") id: Int): Response<Unit>
+
+
+    @POST("reviews/")
+    suspend fun createReview(@Body request: ReviewRequestDto): Response<GenericMessageDto>
+
+    @GET("reviews/reputation/{creatorId}")
+    suspend fun getCreatorReputation(@Path("creatorId") creatorId: Int): Response<ReputationResponseDto>
 }

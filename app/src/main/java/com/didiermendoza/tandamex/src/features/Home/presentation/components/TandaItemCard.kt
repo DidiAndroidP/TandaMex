@@ -26,14 +26,14 @@ fun TandaItemCard(
 ) {
     val statusColor = when (status.lowercase()) {
         "created" -> Color(0xFF4CAF50)
-        "active" -> MaterialTheme.colorScheme.primary
+        "active", "in_progress" -> MaterialTheme.colorScheme.primary
         "finished" -> Color.Gray
         else -> MaterialTheme.colorScheme.secondary
     }
 
     val statusText = when (status.lowercase()) {
         "created" -> "Abierta"
-        "active" -> "En curso"
+        "active", "in_progress" -> "En curso"
         "finished" -> "Finalizada"
         else -> status
     }

@@ -9,7 +9,6 @@ import com.didiermendoza.tandamex.src.core.database.dao.TandaDetailDao
 import com.didiermendoza.tandamex.src.core.database.dao.TandaMemberDao
 import com.didiermendoza.tandamex.src.core.database.dao.TandaPaymentDao
 import com.didiermendoza.tandamex.src.core.database.dao.UserDao
-import com.didiermendoza.tandamex.src.core.database.dao.WalletDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -47,9 +46,6 @@ object DatabaseModule {
 
     @Provides
     fun provideScheduleDao(db: TandaMexDatabase): ScheduleDao = db.scheduleDao()
-
-    @Provides
-    fun provideWalletDao(db: TandaMexDatabase): WalletDao = db.walletDao()
 
     @Provides
     fun provideTandaPaymentDao(db: TandaMexDatabase): TandaPaymentDao = db.tandaPaymentDao()

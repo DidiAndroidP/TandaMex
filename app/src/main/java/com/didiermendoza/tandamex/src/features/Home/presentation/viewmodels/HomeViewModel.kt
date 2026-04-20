@@ -3,8 +3,6 @@ package com.didiermendoza.tandamex.src.features.Home.presentation.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.didiermendoza.tandamex.src.features.Home.domain.entities.Tanda
-import com.didiermendoza.tandamex.src.features.Home.domain.usecases.CheckWalletExistsUseCase
-import com.didiermendoza.tandamex.src.features.wallet.domain.usecases.CreateDefaultWalletUseCase
 import com.didiermendoza.tandamex.src.features.Home.domain.usecases.GetAvailableTandasUseCase
 import com.didiermendoza.tandamex.src.features.Home.domain.usecases.GetMyTandasUseCase
 import com.didiermendoza.tandamex.src.features.Home.domain.usecases.SyncTandasUseCase
@@ -26,8 +24,6 @@ class HomeViewModel @Inject constructor(
     private val getMyTandasUseCase: GetMyTandasUseCase,
     private val syncTandasUseCase: SyncTandasUseCase,
     private val getMyProfileUseCase: GetMyProfileUseCase,
-    private val checkWalletExistsUseCase: CheckWalletExistsUseCase,
-    private val createDefaultWalletUseCase: CreateDefaultWalletUseCase,
     private val sendFcmTokenUseCase: SendFcmTokenUseCase
 ) : ViewModel() {
 
@@ -53,11 +49,6 @@ class HomeViewModel @Inject constructor(
     val userPhoto = _userPhoto.asStateFlow()
 
     private var currentUserId: Int? = null
-    private val _hasWallet = MutableStateFlow(true)
-    val hasWallet = _hasWallet.asStateFlow()
-
-    private val _showWalletDialog = MutableStateFlow(false)
-    val showWalletDialog = _showWalletDialog.asStateFlow()
 
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing = _isRefreshing.asStateFlow()
@@ -98,6 +89,18 @@ class HomeViewModel @Inject constructor(
                     syncTandasUseCase()
                 } catch (e: Exception) {
                     println("Error syncTandas: ${e.message}")
+
+            getMyProfileUseCase().fold(
+                onSuccess = { user ->
+                    currentUserId = user.id
+                    _userName.value = user.name.split(" ").firstOrNull() ?: user.name
+                    _userPhoto.value = user.photo
+
+                    registerDeviceToken()
+                },
+                onFailure = {
+                    _error.value = "Error al obtener perfil"
+
                 }
             }
 
@@ -125,43 +128,18 @@ class HomeViewModel @Inject constructor(
     private fun registerDeviceToken() {
         FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
             if (!task.isSuccessful) {
-                println("🔥 FCM: Error al obtener el token de Firebase")
+                println("FCM: Error al obtener el token de Firebase")
                 return@addOnCompleteListener
             }
 
             val token = task.result
             viewModelScope.launch {
                 sendFcmTokenUseCase(token).fold(
-                    onSuccess = { println("✅ Token guardado en Backend exitosamente") },
-                    onFailure = { println("❌ Error al guardar token en Backend: ${it.message}") }
+                    onSuccess = { println("Token guardado en Backend exitosamente") },
+                    onFailure = { println("Error al guardar token en Backend: ${it.message}") }
                 )
             }
         }
-    }
-
-    private suspend fun checkUserWallet(userId: Int) {
-        val exists = checkWalletExistsUseCase(userId)
-        _hasWallet.value = exists
-        if (!exists) {
-            _showWalletDialog.value = true
-        }
-    }
-
-    fun acceptWalletCreation() {
-        viewModelScope.launch {
-            currentUserId?.let { userId ->
-                _isLoading.value = true
-                createDefaultWalletUseCase(userId)
-                _hasWallet.value = true
-                _showWalletDialog.value = false
-                _isLoading.value = false
-            }
-        }
-    }
-
-    fun declineWalletCreation() {
-        _showWalletDialog.value = false
-        _hasWallet.value = false
     }
 
     fun refreshData() {

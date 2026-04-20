@@ -141,7 +141,6 @@ class TandaViewModel @Inject constructor(
 
     fun leaveTanda() {
         val tandaInfo = _tanda.value ?: return
-        val userId = _currentUserId.value ?: return
 
         val currentUserMember = _members.value.find { it.id == userId }
         val amountToRefund = if (currentUserMember?.hasPaid == true) tandaInfo.contributionAmount else 0.0

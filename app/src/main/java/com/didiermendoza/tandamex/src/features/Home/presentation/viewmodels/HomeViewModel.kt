@@ -1,12 +1,15 @@
 package com.didiermendoza.tandamex.src.features.Home.presentation.viewmodels
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.didiermendoza.tandamex.src.core.status.UploadStatus
 import com.didiermendoza.tandamex.src.features.Home.domain.entities.Tanda
 import com.didiermendoza.tandamex.src.features.Home.domain.usecases.GetAvailableTandasUseCase
 import com.didiermendoza.tandamex.src.features.Home.domain.usecases.GetMyTandasUseCase
 import com.didiermendoza.tandamex.src.features.Home.domain.usecases.SyncTandasUseCase
 import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.GetMyProfileUseCase
+import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.ObserveUploadStatusUseCase
 import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.SendFcmTokenUseCase
 import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,7 +26,8 @@ class HomeViewModel @Inject constructor(
     private val getMyTandasUseCase: GetMyTandasUseCase,
     private val syncTandasUseCase: SyncTandasUseCase,
     private val getMyProfileUseCase: GetMyProfileUseCase,
-    private val sendFcmTokenUseCase: SendFcmTokenUseCase
+    private val sendFcmTokenUseCase: SendFcmTokenUseCase,
+    private val observeUploadStatusUseCase: ObserveUploadStatusUseCase
 ) : ViewModel() {
 
     private val _availableTandas = MutableStateFlow<List<Tanda>>(emptyList())
@@ -55,7 +59,7 @@ class HomeViewModel @Inject constructor(
     init {
         refreshData()
         observeTandas()
-        loadData()
+        observeProfileChanges()
     }
 
     private fun observeTandas() {
@@ -67,6 +71,16 @@ class HomeViewModel @Inject constructor(
         }.launchIn(viewModelScope)
     }
 
+    private fun observeProfileChanges() {
+        viewModelScope.launch {
+            observeUploadStatusUseCase().collect { status ->
+                if (status is UploadStatus.Success) {
+                    loadData()
+                }
+            }
+        }
+    }
+
     fun loadData() {
         _isLoading.value = true
         _error.value = null
@@ -76,7 +90,22 @@ class HomeViewModel @Inject constructor(
                 onSuccess = { user ->
                     currentUserId = user.id
                     _userName.value = user.name.split(" ").firstOrNull() ?: user.name
-                    _userPhoto.value = user.photo
+                    val cleanUrl = user.photo?.let { url ->
+                        val sansQuery = url.split("?").first() // Quitamos parámetros ?_a=...
+
+                        // 1. Forzamos formato JPG en el path de transformación
+                        val withFormat = sansQuery.replace("f_auto", "f_jpg")
+
+                        // 2. IMPORTANTE: Añadimos la extensión al final del ID público
+                        if (!withFormat.lowercase().endsWith(".jpg")) {
+                            "$withFormat.jpg"
+                        } else {
+                            withFormat
+                        }
+                    }
+
+                    Log.d("DEBUG_PHOTO", "URL FORZADA: $cleanUrl")
+                    _userPhoto.value = cleanUrl
 
                     registerDeviceToken()
                 },

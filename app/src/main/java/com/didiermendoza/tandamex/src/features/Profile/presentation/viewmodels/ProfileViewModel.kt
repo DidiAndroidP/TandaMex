@@ -2,6 +2,7 @@ package com.didiermendoza.tandamex.src.features.Profile.presentation.viewmodels
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.didiermendoza.tandamex.src.core.hardware.domain.VibrationManager
@@ -145,24 +146,19 @@ class ProfileViewModel @Inject constructor(
 
     fun takePhoto(imageCapture: Any) {
         _isLoading.value = true
-        _error.value = null
-
         viewModelScope.launch {
             takeProfilePhotoUseCase(imageCapture).fold(
                 onSuccess = { uri ->
+                    Log.d("ProfileVM", "URI recibida: $uri")
                     _profilePhotoUri.value = uri
-                    vibrationManager.vibrate(100)
-                    uri.path?.let { path ->
-                        // Cambiamos la llamada aquí
-                        uploadPhotoWithWorkManager(path)
-                    } ?: run {
-                        _isLoading.value = false
-                    }
+
+                    val pathToUpload = uri.toString()
+                    uploadPhotoWithWorkManager(pathToUpload)
                 },
-                onFailure = { exception ->
-                    _error.value = exception.message
+                onFailure = {
+                    Log.e("ProfileVM", "Error al tomar foto: ${it.message}")
+                    _error.value = it.message
                     _isLoading.value = false
-                    vibrationManager.vibrateError()
                 }
             )
         }

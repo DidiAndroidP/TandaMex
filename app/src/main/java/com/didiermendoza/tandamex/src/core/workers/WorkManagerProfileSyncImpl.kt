@@ -2,6 +2,7 @@ package com.didiermendoza.tandamex.src.core.workers
 
 import javax.inject.Inject
 import android.content.Context
+import android.util.Log
 import androidx.work.Constraints
 import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
@@ -42,19 +43,26 @@ class WorkManagerProfileSyncImpl @Inject constructor(
     }
 
     override fun observeUploadState(): Flow<UploadStatus> {
-        val workManager = WorkManager.getInstance(context)
-
-        return workManager.getWorkInfosForUniqueWorkFlow("UploadProfilePhoto")
+        return WorkManager.getInstance(context)
+            .getWorkInfosForUniqueWorkFlow("UploadProfilePhoto")
             .map { workInfoList ->
-                val workInfo = workInfoList.firstOrNull() ?: return@map UploadStatus.Idle
+                val workInfo = workInfoList.firstOrNull()
+                Log.d("ProfileSync", "Estado de WorkManager: ${workInfo?.state}")
+
+                if (workInfo == null) return@map UploadStatus.Idle
 
                 when (workInfo.state) {
-                    WorkInfo.State.ENQUEUED -> UploadStatus.Loading
-                    WorkInfo.State.RUNNING -> UploadStatus.Loading
-                    WorkInfo.State.SUCCEEDED -> UploadStatus.Success("Foto actualizada con éxito")
-                    WorkInfo.State.FAILED -> UploadStatus.Error("Error al subir la foto.")
-                    WorkInfo.State.CANCELLED -> UploadStatus.Idle
+                    WorkInfo.State.ENQUEUED,
+                    WorkInfo.State.RUNNING,
                     WorkInfo.State.BLOCKED -> UploadStatus.Loading
+
+                    WorkInfo.State.SUCCEEDED -> UploadStatus.Success("Foto actualizada")
+
+                    WorkInfo.State.FAILED -> {
+                        // Revisa si el worker puso algún dato de salida con el error
+                        UploadStatus.Error("Error al subir la foto.")
+                    }
+                    else -> UploadStatus.Idle
                 }
             }
     }

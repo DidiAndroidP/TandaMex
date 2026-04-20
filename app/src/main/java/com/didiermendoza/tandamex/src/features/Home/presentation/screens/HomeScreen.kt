@@ -58,11 +58,6 @@ fun HomeScreen(
 
     val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.US)
 
-    val hasWallet by viewModel.hasWallet.collectAsStateWithLifecycle()
-    val showWalletDialog by viewModel.showWalletDialog.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
-
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
 
     var selectedTabIndex by remember { mutableIntStateOf(0) }
@@ -84,28 +79,7 @@ fun HomeScreen(
         }
     }
 
-    if (showWalletDialog) {
-        AlertDialog(
-            onDismissRequest = { viewModel.declineWalletCreation() },
-            title = { Text("Activar Billetera Virtual") },
-            text = {
-                Text("Para poder crear o unirte a tandas, necesitas activar tu billetera simulada. Te regalaremos $10,000 MXN para que pruebes la app.")
-            },
-            confirmButton = {
-                Button(onClick = { viewModel.acceptWalletCreation() }) {
-                    Text("¡Aceptar regalo!")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.declineWalletCreation() }) {
-                    Text("Ahora no")
-                }
-            }
-        )
-    }
-
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background,
         floatingActionButton = {
             AnimatedVisibility(
@@ -114,17 +88,9 @@ fun HomeScreen(
                 exit = scaleOut() + fadeOut()
             ) {
                 FloatingActionButton(
-                    onClick = {
-                        if (hasWallet) {
-                            onNavigateToCreateTanda()
-                        } else {
-                            scope.launch {
-                                snackbarHostState.showSnackbar("Debes crear una billetera en tu perfil primero.")
-                            }
-                        }
-                    },
-                    containerColor = if (hasWallet) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = if (hasWallet) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    onClick = onNavigateToCreateTanda,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
                     shape = CircleShape,
                     elevation = FloatingActionButtonDefaults.elevation(8.dp)
                 ) {

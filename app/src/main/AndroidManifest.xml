@@ -9,9 +9,6 @@
 
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
-
     <application
         android:name=".TandaMexApp"
         android:allowBackup="true"
@@ -52,12 +49,6 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
-
-        <service
-            android:name=".src.core.workers.WorkManagerProfileSyncImpl"
-            android:foregroundServiceType="dataSync"
-            android:enabled="true"
-            android:exported="false"/>
 
     </application>
 

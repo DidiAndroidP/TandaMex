@@ -1,14 +1,12 @@
 package com.didiermendoza.tandamex.src.features.Profile.presentation.viewmodels
 
 import android.content.Context
-import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.didiermendoza.tandamex.src.core.hardware.domain.VibrationManager
-import com.didiermendoza.tandamex.src.core.services.DataSyncService
 import com.didiermendoza.tandamex.src.core.status.UploadStatus
+import com.didiermendoza.tandamex.src.core.workers.ProfileSyncManager
 import com.didiermendoza.tandamex.src.features.Profile.domain.entities.User
 import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.GetMyProfileUseCase
 import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.ObserveUploadStatusUseCase
@@ -30,6 +28,7 @@ class ProfileViewModel @Inject constructor(
     private val vibrationManager: VibrationManager,
     private val observeUploadStatusUseCase: ObserveUploadStatusUseCase,
     private val reviewRepository: ReviewRepository,
+    private val profileSyncManager: ProfileSyncManager,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -154,7 +153,8 @@ class ProfileViewModel @Inject constructor(
                     _profilePhotoUri.value = uri
                     vibrationManager.vibrate(100)
                     uri.path?.let { path ->
-                        uploadPhotoViaService(path)
+                        // Cambiamos la llamada aquí
+                        uploadPhotoWithWorkManager(path)
                     } ?: run {
                         _isLoading.value = false
                     }
@@ -168,16 +168,7 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    private fun uploadPhotoViaService(filePath: String) {
-        val intent = Intent(context, DataSyncService::class.java).apply {
-            action = DataSyncService.ACTION_UPLOAD_PHOTO
-            putExtra(DataSyncService.EXTRA_FILE_PATH, filePath)
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            context.startForegroundService(intent)
-        } else {
-            context.startService(intent)
-        }
+    private fun uploadPhotoWithWorkManager(filePath: String) {
+        profileSyncManager.enqueuePhotoUpload(filePath)
     }
 }

@@ -21,7 +21,7 @@ class WorkManagerProfileSyncImpl @Inject constructor(
 
     override fun enqueuePhotoUpload(filePath: String) {
         val inputData = Data.Builder()
-            .putString("key_file_path", filePath)
+            .putString(ProfilePhotoUploadWorker.KEY_FILE_PATH, filePath)
             .build()
 
         val constraints = Constraints.Builder()
@@ -52,7 +52,7 @@ class WorkManagerProfileSyncImpl @Inject constructor(
                     WorkInfo.State.ENQUEUED -> UploadStatus.Loading
                     WorkInfo.State.RUNNING -> UploadStatus.Loading
                     WorkInfo.State.SUCCEEDED -> UploadStatus.Success("Foto actualizada con éxito")
-                    WorkInfo.State.FAILED -> UploadStatus.Error("Error al subir la foto. Se reintentará.")
+                    WorkInfo.State.FAILED -> UploadStatus.Error("Error al subir la foto.")
                     WorkInfo.State.CANCELLED -> UploadStatus.Idle
                     WorkInfo.State.BLOCKED -> UploadStatus.Loading
                 }

@@ -10,6 +10,7 @@ import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.GetMyProf
 import com.didiermendoza.tandamex.src.features.Profile.domain.usecases.SendFcmTokenUseCase
 import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
@@ -53,17 +54,13 @@ class HomeViewModel @Inject constructor(
     val isRefreshing = _isRefreshing.asStateFlow()
 
     init {
-        refreshData()
-        observeTandas()
+        observeAvailableTandas()
         loadData()
     }
 
-    private fun observeTandas() {
+    private fun observeAvailableTandas() {
         getAvailableTandasUseCase().onEach { list ->
             _availableTandas.value = list
-            if (list.isNotEmpty()) {
-                _isLoading.value = false
-            }
         }.launchIn(viewModelScope)
     }
 
@@ -72,6 +69,27 @@ class HomeViewModel @Inject constructor(
         _error.value = null
 
         viewModelScope.launch {
+            val profileJob = async {
+                getMyProfileUseCase().fold(
+                    onSuccess = { user ->
+                        currentUserId = user.id
+                        _userName.value = user.name.split(" ").firstOrNull() ?: user.name
+                        _userPhoto.value = user.photo
+                        checkUserWallet(user.id)
+                        registerDeviceToken()
+                    },
+                    onFailure = {
+                        _error.value = "Error al obtener perfil"
+                    }
+                )
+            }
+
+            val syncJob = async {
+                try {
+                    syncTandasUseCase()
+                } catch (e: Exception) {
+                    println("Error syncTandas: ${e.message}")
+
             getMyProfileUseCase().fold(
                 onSuccess = { user ->
                     currentUserId = user.id
@@ -82,29 +100,27 @@ class HomeViewModel @Inject constructor(
                 },
                 onFailure = {
                     _error.value = "Error al obtener perfil"
-                }
-            )
-        }
 
-        viewModelScope.launch {
-            try {
-                syncTandasUseCase()
-            } catch (e: Exception) {
-                println("Error syncTandas: ${e.message}")
+                }
             }
-        }
 
-        viewModelScope.launch {
-            getMyTandasUseCase().fold(
-                onSuccess = { miLista ->
-                    val (history, active) = miLista.partition { it.status.equals("finished", ignoreCase = true) }
-                    _historyTandas.value = history
-                    _activeTandas.value = active
-                },
-                onFailure = { error ->
-                    _error.value = "Error Mis Tandas: ${error.message}"
-                }
-            )
+            val myTandasJob = async {
+                getMyTandasUseCase().fold(
+                    onSuccess = { miLista ->
+                        val (history, active) = miLista.partition { it.status.equals("finished", ignoreCase = true) }
+                        _historyTandas.value = history
+                        _activeTandas.value = active
+                    },
+                    onFailure = { error ->
+                        _error.value = "Error Mis Tandas: ${error.message}"
+                    }
+                )
+            }
+
+            profileJob.await()
+            syncJob.await()
+            myTandasJob.await()
+
             _isLoading.value = false
         }
     }
@@ -117,8 +133,6 @@ class HomeViewModel @Inject constructor(
             }
 
             val token = task.result
-            println("FCM Token obtenido:")
-
             viewModelScope.launch {
                 sendFcmTokenUseCase(token).fold(
                     onSuccess = { println("Token guardado en Backend exitosamente") },
@@ -131,9 +145,7 @@ class HomeViewModel @Inject constructor(
     fun refreshData() {
         _isRefreshing.value = true
         _error.value = null
-
         loadData()
-
         _isRefreshing.value = false
     }
 }

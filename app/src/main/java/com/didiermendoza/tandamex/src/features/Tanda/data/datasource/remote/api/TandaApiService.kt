@@ -16,6 +16,9 @@ interface TandaApiService {
     @GET("tandas/available")
     suspend fun getAvailableTandas(): Response<List<TandaResponseDto>>
 
+    @GET("tandas/{id}/schedule")
+    suspend fun getSchedule(@Path("id") tandaId: Int): Response<ScheduleResponseDto>
+
     @GET("tandas/me")
     suspend fun getMyTandas(): Response<List<TandaResponseDto>>
 

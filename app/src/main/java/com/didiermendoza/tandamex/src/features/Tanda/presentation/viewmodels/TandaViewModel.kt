@@ -143,9 +143,12 @@ class TandaViewModel @Inject constructor(
         val tandaInfo = _tanda.value ?: return
         val userId = _currentUserId.value ?: return
 
+        val currentUserMember = _members.value.find { it.id == userId }
+        val amountToRefund = if (currentUserMember?.hasPaid == true) tandaInfo.contributionAmount else 0.0
+
         _isLoading.value = true
         viewModelScope.launch {
-            leaveTandaUseCase(tandaInfo.id, userId, tandaInfo.contributionAmount).fold(
+            leaveTandaUseCase(tandaInfo.id, userId, amountToRefund).fold(
                 onSuccess = { msg ->
                     _message.value = msg
                     vibrationManager.vibrate(150)
@@ -233,5 +236,9 @@ class TandaViewModel @Inject constructor(
 
     fun clearMessage() {
         _message.value = null
+    }
+
+    fun refreshCurrentTanda() {
+        _tanda.value?.id?.let { syncData(it) }
     }
 }

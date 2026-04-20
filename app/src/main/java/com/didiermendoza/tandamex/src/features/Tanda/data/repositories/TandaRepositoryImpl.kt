@@ -22,6 +22,7 @@ import com.didiermendoza.tandamex.src.features.Tanda.data.datasources.local.mapp
 import com.didiermendoza.tandamex.src.features.Tanda.data.datasources.remote.mapper.toEntity
 import com.didiermendoza.tandamex.src.features.Tanda.data.datasources.remote.mapper.toDomain
 import com.didiermendoza.tandamex.src.features.Tanda.data.datasources.remote.model.PaymentSessionRequestDto
+import com.didiermendoza.tandamex.src.features.Tanda.data.datasources.remote.model.ScheduleDataDto
 import com.didiermendoza.tandamex.src.features.Tanda.domain.entities.ScheduleData
 
 class TandaRepositoryImpl @Inject constructor(
@@ -110,6 +111,16 @@ class TandaRepositoryImpl @Inject constructor(
             val membersResponse = api.getTandaMembers(tandaId)
             if (membersResponse.isSuccessful && membersResponse.body() != null) {
                 memberDao.replaceTandaMembers(tandaId, membersResponse.body()!!.map { it.toEntity(tandaId) })
+            }
+
+            val scheduleResponse = api.getSchedule(tandaId)
+            if (scheduleResponse.isSuccessful && scheduleResponse.body() != null) {
+                val scheduleDomain = scheduleResponse.body()!!.data.toDomain()
+                scheduleDao.clearAndInsertSchedule(
+                    tandaId = tandaId,
+                    summary = scheduleDomain.toSummaryEntity(),
+                    turnos = scheduleDomain.turnos.map { it.toEntity(tandaId) }
+                )
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -263,5 +274,14 @@ class TandaRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    override suspend fun saveScheduleLocal(scheduleDataDto: ScheduleDataDto) {
+        val domain = scheduleDataDto.toDomain()
+        scheduleDao.clearAndInsertSchedule(
+            tandaId = domain.tandaId,
+            summary = domain.toSummaryEntity(),
+            turnos = domain.turnos.map { it.toEntity(domain.tandaId) }
+        )
     }
 }

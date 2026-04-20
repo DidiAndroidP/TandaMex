@@ -1,5 +1,9 @@
 package com.didiermendoza.tandamex.src.features.Tanda.presentation.screens
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -9,17 +13,24 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.didiermendoza.tandamex.presentation.tanda_detail.LiveSorteoState
 import com.didiermendoza.tandamex.presentation.tanda_detail.LiveSorteoViewModel
+import com.didiermendoza.tandamex.src.features.Tanda.presentation.components.ReviewDialog
 import com.didiermendoza.tandamex.src.features.Tanda.presentation.components.RouletteDialog
 import com.didiermendoza.tandamex.src.features.Tanda.presentation.components.TandaActionButtons
 import com.didiermendoza.tandamex.src.features.Tanda.presentation.components.TandaDetailInfo
 import com.didiermendoza.tandamex.src.features.Tanda.presentation.components.TandaMembersList
 import com.didiermendoza.tandamex.src.features.Tanda.presentation.components.TandaScheduleSection
+import com.didiermendoza.tandamex.src.features.Tanda.presentation.viewmodels.ReviewViewModel
 import com.didiermendoza.tandamex.src.features.Tanda.presentation.viewmodels.TandaViewModel
 import java.text.NumberFormat
 import java.util.Locale
@@ -29,6 +40,7 @@ import java.util.Locale
 fun TandaScreen(
     viewModel: TandaViewModel = hiltViewModel(),
     liveSorteoViewModel: LiveSorteoViewModel = hiltViewModel(),
+    reviewViewModel: ReviewViewModel = hiltViewModel(),
     onBackClick: () -> Unit
 ) {
     val tanda by viewModel.tanda.collectAsStateWithLifecycle()
@@ -42,14 +54,55 @@ fun TandaScreen(
     val stripeUrl by viewModel.stripeUrl.collectAsStateWithLifecycle()
 
     val sorteoState by liveSorteoViewModel.liveSorteoState.collectAsStateWithLifecycle()
+    val showReviewDialog by reviewViewModel.showReviewDialog.collectAsStateWithLifecycle()
 
     val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.US)
     val snackbarHostState = remember { SnackbarHostState() }
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.refreshCurrentTanda()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    DisposableEffect(context) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(ctx: Context?, intent: Intent?) {
+                viewModel.refreshCurrentTanda()
+            }
+        }
+        val filter = IntentFilter("com.didiermendoza.tandamex.UPDATE_TANDA")
+        ContextCompat.registerReceiver(context, receiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
+
+        onDispose {
+            context.unregisterReceiver(receiver)
+        }
+    }
 
     LaunchedEffect(tanda?.id) {
         tanda?.id?.let {
             liveSorteoViewModel.joinLiveRoom(it)
+        }
+    }
+
+    LaunchedEffect(sorteoState) {
+        if (sorteoState is LiveSorteoState.Finished) {
+            viewModel.refreshCurrentTanda()
+        }
+    }
+
+    LaunchedEffect(tanda?.status) {
+        if (tanda?.status?.lowercase() == "finished") {
+            reviewViewModel.onTandaFinished(isCreator = tanda?.isAdmin ?: false)
         }
     }
 
@@ -73,6 +126,15 @@ fun TandaScreen(
         }
     }
 
+    if (showReviewDialog && tanda != null) {
+        ReviewDialog(
+            onDismiss = { reviewViewModel.dismissDialog() },
+            onSubmit = { rating, comment ->
+                reviewViewModel.submitReview(tanda!!.id, rating, comment)
+            }
+        )
+    }
+
     if (sorteoState !is LiveSorteoState.Idle) {
         val participantNames = members.map { it.name }
         RouletteDialog(
@@ -80,6 +142,7 @@ fun TandaScreen(
             participantNames = participantNames,
             onDismiss = {
                 liveSorteoViewModel.dismissSorteo()
+                viewModel.refreshCurrentTanda()
             }
         )
     }

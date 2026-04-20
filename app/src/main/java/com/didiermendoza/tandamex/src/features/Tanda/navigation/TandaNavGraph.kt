@@ -11,6 +11,8 @@ import com.didiermendoza.tandamex.src.features.Tanda.presentation.screens.Create
 import com.didiermendoza.tandamex.src.features.Tanda.presentation.screens.TandaScreen
 import com.didiermendoza.tandamex.src.features.Tanda.presentation.viewmodels.CreateTandaViewModel
 import com.didiermendoza.tandamex.src.features.Tanda.presentation.viewmodels.TandaViewModel
+import com.didiermendoza.tandamex.src.features.Tanda.presentation.viewmodels.ReviewViewModel
+import com.didiermendoza.tandamex.presentation.tanda_detail.LiveSorteoViewModel
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -30,6 +32,8 @@ fun NavGraphBuilder.tandaNavGraph(navController: NavHostController) {
     ) { backStackEntry ->
         val route: TandaDetailRoute = backStackEntry.toRoute()
         val viewModel: TandaViewModel = hiltViewModel()
+        val liveSorteoViewModel: LiveSorteoViewModel = hiltViewModel()
+        val reviewViewModel: ReviewViewModel = hiltViewModel()
 
         if (viewModel.tanda.value == null) {
             viewModel.loadTandaDetail(route.tandaId)
@@ -37,6 +41,8 @@ fun NavGraphBuilder.tandaNavGraph(navController: NavHostController) {
 
         TandaScreen(
             viewModel = viewModel,
+            liveSorteoViewModel = liveSorteoViewModel,
+            reviewViewModel = reviewViewModel,
             onBackClick = { navController.popBackStack() }
         )
     }

@@ -3,6 +3,7 @@ package com.didiermendoza.tandamex.src.core.notifications
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.google.firebase.messaging.FirebaseMessagingService
@@ -16,6 +17,11 @@ class TandaFirebaseService : FirebaseMessagingService() {
         val title = message.data["title"] ?: "¡Notificación de Tandamex!"
         val body = message.data["body"] ?: "Tienes una nueva actualización en tu tanda."
         val tandaId = message.data["tandaId"]
+
+        val updateIntent = Intent("com.didiermendoza.tandamex.UPDATE_TANDA")
+        updateIntent.setPackage(packageName)
+        sendBroadcast(updateIntent)
+
         showVisualNotification(title, body)
     }
 

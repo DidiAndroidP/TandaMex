@@ -1,5 +1,6 @@
 package com.didiermendoza.tandamex.src.features.Tanda.domain.repositories
 
+import com.didiermendoza.tandamex.src.features.Tanda.data.datasources.remote.model.ScheduleDataDto
 import com.didiermendoza.tandamex.src.features.Tanda.domain.entities.ScheduleData
 import com.didiermendoza.tandamex.src.features.Tanda.domain.entities.TandaDetail
 import com.didiermendoza.tandamex.src.features.Tanda.domain.entities.TandaMember
@@ -22,4 +23,5 @@ interface TandaRepository {
     suspend fun createPaymentSession(tandaId: Int, period: Int, amount: Double): Result<String>
     suspend fun syncMyTandas(): Result<List<com.didiermendoza.tandamex.src.features.Home.domain.entities.Tanda>>
     suspend fun triggerLiveSchedule(tandaId: Int): Result<Unit>
+    suspend fun saveScheduleLocal(scheduleDataDto: ScheduleDataDto)
 }

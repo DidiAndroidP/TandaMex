@@ -1,16 +1,22 @@
 package com.didiermendoza.tandamex.src.features.Tanda.presentation.components
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -61,7 +67,7 @@ fun RouletteDialog(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(180.dp),
+                        .height(240.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     when (state) {
@@ -83,13 +89,22 @@ fun RouletteDialog(
 
                         is LiveSorteoState.SpinningTurn -> {
                             var currentNameIndex by remember { mutableIntStateOf(0) }
+                            val rotation = remember { Animatable(0f) }
+
+                            LaunchedEffect(state.targetTurn) {
+                                rotation.snapTo(0f)
+                                rotation.animateTo(
+                                    targetValue = 360f * 6 + (0..360).random(),
+                                    animationSpec = tween(durationMillis = 2400, easing = FastOutSlowInEasing)
+                                )
+                            }
 
                             LaunchedEffect(Unit) {
                                 while (true) {
                                     if (participantNames.isNotEmpty()) {
                                         currentNameIndex = (currentNameIndex + 1) % participantNames.size
                                     }
-                                    delay(120)
+                                    delay(100)
                                 }
                             }
 
@@ -102,6 +117,36 @@ fun RouletteDialog(
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.secondary
                                 )
+
+                                Spacer(modifier = Modifier.height(24.dp))
+
+                                Box(contentAlignment = Alignment.TopCenter) {
+                                    Canvas(
+                                        modifier = Modifier
+                                            .size(120.dp)
+                                            .graphicsLayer { rotationZ = rotation.value }
+                                    ) {
+                                        val sliceCount = if (participantNames.size > 2) participantNames.size else 6
+                                        val sweep = 360f / sliceCount
+                                        for (i in 0 until sliceCount) {
+                                            drawArc(
+                                                color = if (i % 2 == 0) Color(0xFF6650a4) else Color(0xFFD0BCFF),
+                                                startAngle = i * sweep,
+                                                sweepAngle = sweep,
+                                                useCenter = true
+                                            )
+                                        }
+                                    }
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowDropDown,
+                                        contentDescription = null,
+                                        tint = Color.Red,
+                                        modifier = Modifier
+                                            .size(48.dp)
+                                            .offset(y = (-24).dp)
+                                    )
+                                }
+
                                 Spacer(modifier = Modifier.height(16.dp))
 
                                 val displayName = if (participantNames.isNotEmpty()) participantNames[currentNameIndex] else "..."
@@ -115,7 +160,7 @@ fun RouletteDialog(
                                 ) { name ->
                                     Text(
                                         text = name,
-                                        style = MaterialTheme.typography.headlineMedium,
+                                        style = MaterialTheme.typography.headlineSmall,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onSurface,
                                         textAlign = TextAlign.Center
@@ -210,6 +255,7 @@ fun RouletteDialog(
                         Text("Aceptar y Continuar")
                     }
                 }
+
             }
         }
     }

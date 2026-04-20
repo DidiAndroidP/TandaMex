@@ -8,10 +8,10 @@ import com.didiermendoza.tandamex.src.features.Profile.data.repositories.Profile
 import com.didiermendoza.tandamex.src.features.Profile.domain.repositories.ProfileRepository
 import com.didiermendoza.tandamex.src.features.Register.data.repositories.RegisterRepositoryImpl
 import com.didiermendoza.tandamex.src.features.Register.domain.repositories.RegisterRepository
+import com.didiermendoza.tandamex.src.features.Tanda.data.repositories.ReviewRepositoryImpl
 import com.didiermendoza.tandamex.src.features.Tanda.data.repositories.TandaRepositoryImpl
+import com.didiermendoza.tandamex.src.features.Tanda.domain.repositories.ReviewRepository
 import com.didiermendoza.tandamex.src.features.Tanda.domain.repositories.TandaRepository
-import com.didiermendoza.tandamex.src.features.wallet.data.repository.WalletRepositoryImpl
-import com.didiermendoza.tandamex.src.features.wallet.domain.repository.WalletRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -54,7 +54,7 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindWalletRepository(
-        walletRepositoryImpl: WalletRepositoryImpl
-    ): WalletRepository
+    abstract fun bindReviewRepository(
+        reviewRepositoryImpl: ReviewRepositoryImpl
+    ): ReviewRepository
 }

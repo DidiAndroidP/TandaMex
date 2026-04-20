@@ -1,6 +1,7 @@
 package com.didiermendoza.tandamex.src.core.workers
 
 import android.content.Context
+import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
@@ -16,8 +17,10 @@ class ProfilePhotoUploadWorker @AssistedInject constructor(
     @Assisted workerParams: WorkerParameters,
     private val uploadProfilePhotoUseCase: UploadProfilePhotoUseCase
 ) : CoroutineWorker(appContext, workerParams) {
+
     companion object {
         const val KEY_FILE_PATH = "key_file_path"
+        private const val TAG = "ProfileWorker"
     }
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
@@ -28,7 +31,14 @@ class ProfilePhotoUploadWorker @AssistedInject constructor(
             if (uploadResult.isSuccess) {
                 Result.success()
             } else {
-                Result.retry()
+                val error = uploadResult.exceptionOrNull()?.message ?: ""
+                // Si el error es 413 o similar, no reintentes, es un fallo definitivo
+                if (error.contains("413") || error.contains("400") || error.contains("404")) {
+                    Log.e("Worker", "Error fatal del servidor, no se reintentará: $error")
+                    Result.failure()
+                } else {
+                    Result.retry() // Reintenta solo si parece un error de red temporal
+                }
             }
         } catch (e: Exception) {
             Result.retry()

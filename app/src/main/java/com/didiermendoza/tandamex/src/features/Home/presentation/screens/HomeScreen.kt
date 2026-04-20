@@ -2,11 +2,13 @@ package com.didiermendoza.tandamex.src.features.Home.presentation.screens
 
 import android.Manifest
 import android.os.Build
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -26,18 +28,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.didiermendoza.tandamex.src.features.Home.domain.entities.Tanda
 import com.didiermendoza.tandamex.src.features.Home.presentation.components.TandaItemCard
 import com.didiermendoza.tandamex.src.features.Home.presentation.viewmodels.HomeViewModel
-import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -58,11 +62,6 @@ fun HomeScreen(
     val userPhoto by viewModel.userPhoto.collectAsStateWithLifecycle()
 
     val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.US)
-
-    val hasWallet by viewModel.hasWallet.collectAsStateWithLifecycle()
-    val showWalletDialog by viewModel.showWalletDialog.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
 
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
 
@@ -85,28 +84,7 @@ fun HomeScreen(
         }
     }
 
-    if (showWalletDialog) {
-        AlertDialog(
-            onDismissRequest = { viewModel.declineWalletCreation() },
-            title = { Text("Activar Billetera Virtual") },
-            text = {
-                Text("Para poder crear o unirte a tandas, necesitas activar tu billetera simulada. Te regalaremos $10,000 MXN para que pruebes la app.")
-            },
-            confirmButton = {
-                Button(onClick = { viewModel.acceptWalletCreation() }) {
-                    Text("¡Aceptar regalo!")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.declineWalletCreation() }) {
-                    Text("Ahora no")
-                }
-            }
-        )
-    }
-
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background,
         floatingActionButton = {
             AnimatedVisibility(
@@ -115,17 +93,9 @@ fun HomeScreen(
                 exit = scaleOut() + fadeOut()
             ) {
                 FloatingActionButton(
-                    onClick = {
-                        if (hasWallet) {
-                            onNavigateToCreateTanda()
-                        } else {
-                            scope.launch {
-                                snackbarHostState.showSnackbar("Debes crear una billetera en tu perfil primero.")
-                            }
-                        }
-                    },
-                    containerColor = if (hasWallet) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = if (hasWallet) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    onClick = onNavigateToCreateTanda,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
                     shape = CircleShape,
                     elevation = FloatingActionButtonDefaults.elevation(8.dp)
                 ) {
@@ -292,21 +262,28 @@ fun HomeHeader(userName: String, userPhoto: String?, onProfileClick: () -> Unit)
                 )
             }
 
-            IconButton(
-                onClick = onProfileClick,
+            Box(
                 modifier = Modifier
                     .size(48.dp)
-                    .background(MaterialTheme.colorScheme.surface, CircleShape)
-                    .padding(if (userPhoto != null) 0.dp else 4.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surface)
+                    .clickable(onClick = onProfileClick),
+                contentAlignment = Alignment.Center
             ) {
-                if (userPhoto != null) {
+                if (!userPhoto.isNullOrBlank()) {
                     AsyncImage(
-                        model = userPhoto,
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(userPhoto)
+                            .allowHardware(false) // CRÍTICO para Xiaomi
+                            .crossfade(false)     // Evitamos parpadeos negros
+                            .build(),
                         contentDescription = "Foto de perfil",
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(CircleShape)
+                        modifier = Modifier.fillMaxSize(),
+                        // Si sale ROJO, el problema sigue siendo la URL (404)
+                        // Si sale GRIS, nunca descarga
+                        error = ColorPainter(Color.Red),
+                        placeholder = ColorPainter(Color.LightGray)
                     )
                 } else {
                     Icon(
